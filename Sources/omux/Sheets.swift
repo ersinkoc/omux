@@ -163,6 +163,7 @@ struct GroupEditSheet: View {
     @State private var directory = ""
     @State private var command = ""
     @State private var useWorktrees = false
+    @State private var worktreeSetup = ""
 
     var body: some View {
         Form {
@@ -175,6 +176,11 @@ struct GroupEditSheet: View {
             Text("Applies when a session starts. Existing sessions keep running.")
                 .font(.caption).foregroundStyle(.secondary)
             Toggle("Give new sessions their own Git worktree", isOn: $useWorktrees)
+            TextField("Worktree setup", text: $worktreeSetup, prompt: Text("cp \"$OMUX_REPO/.env\" . && npm install"))
+                .font(.system(.body, design: .monospaced))
+            Text(WorktreeSetupHint.text)
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
@@ -189,6 +195,7 @@ struct GroupEditSheet: View {
             directory = group.directory ?? ""
             command = group.command ?? ""
             useWorktrees = group.useWorktrees
+            worktreeSetup = group.worktreeSetup
         }
     }
 
@@ -198,6 +205,7 @@ struct GroupEditSheet: View {
             group.directory = directory.isEmpty ? nil : directory
             group.command = command
             group.useWorktrees = useWorktrees
+            group.worktreeSetup = worktreeSetup.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         dismiss()
     }

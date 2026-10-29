@@ -178,6 +178,8 @@ final class Store: ObservableObject {
             "TERM_PROGRAM": "omux",
         ]
         if let enc = inherited["__CF_USER_TEXT_ENCODING"] { env["__CF_USER_TEXT_ENCODING"] = enc }
+        // Lets a worktree's setup reach the main checkout, e.g. `cp "$OMUX_REPO/.env" .`.
+        if let worktree = tab.worktree { env["OMUX_REPO"] = worktree.repo }
 
         view.startProcess(
             executable: shell,
@@ -479,12 +481,17 @@ final class Store: ObservableObject {
         selectedTabID = tab.id
     }
 
-    /// Adds a ready-made session to a project and starts it.
-    func addSession(_ tab: TabItem, to groupID: UUID) {
+    /// Adds a ready-made session to a project and starts it. `setup` runs once before the
+    /// session's command, which only starts if it succeeds.
+    func addSession(_ tab: TabItem, to groupID: UUID, setup: String? = nil) {
         guard let gi = groups.firstIndex(where: { $0.id == groupID }) else { return }
         groups[gi].tabs.append(tab)
         groups[gi].isCollapsed = false
-        makeTerminal(tab: tab, group: groups[gi])
+        var command: String?
+        if let setup = setup?.trimmingCharacters(in: .whitespacesAndNewlines), !setup.isEmpty {
+            command = [setup, startupCommand(tab: tab, group: groups[gi])].compactMap { $0 }.joined(separator: " && ")
+        }
+        makeTerminal(tab: tab, group: groups[gi], command: command)
         selectedTabID = tab.id
     }
 
