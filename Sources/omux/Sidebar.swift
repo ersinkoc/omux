@@ -275,6 +275,9 @@ struct TabMenu: View {
             Divider()
             if let pr = pulls.requests[tab.id], pr.state == .open {
                 Button("Open Pull Request #\(pr.number)") { NSWorkspace.shared.open(pr.url) }
+                if pr.checksResult == .failed {
+                    Button("Send Failing Checks to Session") { store.sendFailingChecks(tab.id) }
+                }
             } else if let pr = pulls.requests[tab.id], pr.state == .merged {
                 Button("Delete Merged Worktree…") { store.cleanUpMergedWorktree(tab.id) }
                     .help("#\(pr.number) was merged")
