@@ -13,5 +13,6 @@ let package = Package(
             dependencies: [.product(name: "SwiftTerm", package: "SwiftTerm")],
             path: "Sources/omux"
         ),
+        .testTarget(name: "omuxTests", dependencies: ["omux"]),
     ]
 )

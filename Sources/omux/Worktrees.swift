@@ -11,7 +11,7 @@ extension Store {
 
     /// Creates the worktree off the main thread, then adds a session that runs in it.
     /// `completion` gets an error message, or nil on success.
-    func createWorktreeSession(groupID: UUID, name: String, branch: String, base: String, completion: @escaping (String?) -> Void) {
+    func createWorktreeSession(groupID: UUID, name: String, branch: String, base: String, provider: SessionProvider? = nil, completion: @escaping (String?) -> Void) {
         guard let dir = groups.first(where: { $0.id == groupID })?.directory.map({ ($0 as NSString).expandingTildeInPath }) else {
             completion("This project has no folder.")
             return
@@ -25,7 +25,9 @@ extension Store {
             let path = Git.worktreePath(repo: repo, branch: branch)
             await MainActor.run {
                 guard result.ok else { completion(result.message); return }
-                let tab = TabItem(name: name, directory: path, worktree: Worktree(branch: branch, base: base, repo: repo))
+                var tab = TabItem(name: name, directory: path, worktree: Worktree(branch: branch, base: base, repo: repo))
+                tab.provider = provider
+                tab.command = provider?.command
                 self.addSession(tab, to: groupID)
                 completion(nil)
             }
@@ -65,8 +67,7 @@ extension Store {
         case .alertFirstButtonReturn:
             closeTab(id)
         case .alertSecondButtonReturn:
-            closeTab(id)
-            deleteWorktree(worktree, path: path)
+            closeAndDeleteWorktree(id, worktree: worktree, path: path)
         default:
             break
         }
@@ -88,8 +89,19 @@ extension Store {
         delete.hasDestructiveAction = true
         alert.addButton(withTitle: "Cancel")
         guard alert.runModal() == .alertFirstButtonReturn else { return }
-        closeTab(id)
-        deleteWorktree(worktree, path: path)
+        closeAndDeleteWorktree(id, worktree: worktree, path: path)
+    }
+
+    private func closeAndDeleteWorktree(_ id: UUID, worktree: Worktree, path: String) {
+        Task {
+            do {
+                if let tab = tab(id), provider(of: tab) == .codex {
+                    try await CodexManager.shared.detach(id)
+                }
+                closeTab(id)
+                deleteWorktree(worktree, path: path)
+            } catch { Self.showError("Couldn't stop the Codex session", error.localizedDescription) }
+        }
     }
 
     private func deleteWorktree(_ worktree: Worktree, path: String) {
@@ -193,6 +205,7 @@ struct WorktreeSheet: View {
     @State private var loaded = false
     @State private var error: String?
     @State private var working = false
+    @State private var provider: SessionProvider?
 
     private var group: TabGroup? { store.groups.first { $0.id == groupID } }
 
@@ -205,7 +218,7 @@ struct WorktreeSheet: View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("New Session in Worktree").font(.headline)
-                Text("Claude works on its own branch in its own folder, so sessions don't touch each other's files.")
+                Text("The session works on its own branch in its own folder, so sessions don't touch each other's files.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -216,6 +229,11 @@ struct WorktreeSheet: View {
             } else {
                 Form {
                     TextField("Name", text: $name)
+                    Picker("Agent", selection: $provider) {
+                        Text("Project default").tag(Optional<SessionProvider>.none)
+                        Text("Claude Code").tag(Optional(SessionProvider.claude))
+                        Text("Codex").tag(Optional(SessionProvider.codex))
+                    }
                     LabeledContent("Branch") {
                         TextField("Branch", text: Binding(get: { branch }, set: { branch = $0; branchEdited = true }))
                             .labelsHidden()
@@ -260,6 +278,8 @@ struct WorktreeSheet: View {
     }
 
     private func load() async {
+        provider = store.newWorktreeProvider
+        store.newWorktreeProvider = nil
         name = "Session \((group?.tabs.count ?? 0) + 1)"
         guard let dir = group?.directory.map({ ($0 as NSString).expandingTildeInPath }) else { loaded = true; return }
         let info = await Task.detached { () -> (String?, [String], String?) in
@@ -276,7 +296,7 @@ struct WorktreeSheet: View {
         working = true
         error = nil
         let finalName = name.trimmingCharacters(in: .whitespaces)
-        store.createWorktreeSession(groupID: groupID, name: finalName, branch: branch, base: base) { message in
+        store.createWorktreeSession(groupID: groupID, name: finalName, branch: branch, base: base, provider: provider) { message in
             working = false
             if let message { error = message } else { dismiss() }
         }
@@ -316,14 +336,25 @@ struct BranchChip: View {
 struct PermissionButtons: View {
     @EnvironmentObject var store: Store
     let tabID: UUID
+    @ObservedObject private var codex = CodexManager.shared
+    @State private var details = false
 
     var body: some View {
         HStack(spacing: 6) {
+            if let approval = codex.approval(for: tabID) {
+                Button { details.toggle() } label: { Image(systemName: "info.circle") }
+                    .help(approval.detail)
+                    .popover(isPresented: $details) {
+                        ScrollView { Text(approval.detail).font(.system(.body, design: .monospaced)).textSelection(.enabled).padding() }
+                            .frame(width: 420, height: 180)
+                    }
+            }
             Button("Allow") { store.answerPermission(tabID, allow: true) }
                 .buttonStyle(.borderedProminent)
             Button("Deny") { store.answerPermission(tabID, allow: false) }
                 .buttonStyle(.bordered)
         }
         .controlSize(.small)
+        .disabled(codex.approval(for: tabID).map { codex.answering.contains($0) } ?? false)
     }
 }

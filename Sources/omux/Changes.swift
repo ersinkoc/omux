@@ -252,7 +252,7 @@ struct ChangesPanel: View {
             draft = notes.first { $0.path == selected && $0.lineIndex == line.index }?.text ?? ""
             editing = line.index
         }
-        .help("Click to leave a note for Claude")
+                    .help("Click to leave a note for this session")
     }
 
     private func noteBubble(_ note: DiffNote, line: DiffLine) -> some View {
@@ -344,7 +344,7 @@ struct ChangesPanel: View {
             if !notes.isEmpty {
                 Image(systemName: "text.bubble").foregroundStyle(.yellow)
                 Text("\(notes.count) note\(notes.count == 1 ? "" : "s")")
-                Button("Send to Claude") { changes.sendNotes() }
+                Button("Send to \(store.selectedProvider == .codex ? "Codex" : "Claude")") { changes.sendNotes() }
                     .help("Types the notes into the session and sends them")
             } else if !changes.files.isEmpty {
                 Text("Click a line to leave a note").foregroundStyle(.secondary)
@@ -396,7 +396,7 @@ private struct NoteEditor: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            TextField("Note for Claude", text: $draft)
+            TextField("Review note", text: $draft)
                 .textFieldStyle(.roundedBorder)
                 .focused($focused)
                 .onSubmit(save)

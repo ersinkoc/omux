@@ -258,7 +258,7 @@ struct BrowserPanel: View {
                         .foregroundStyle(session.picking ? Color.accentColor : Color.secondary)
                 }
                 .disabled(session.currentURL == nil)
-                .help("Pick an element to send to Claude")
+                .help("Pick an element to send to this session")
                 Button { if let url = session.currentURL { NSWorkspace.shared.open(url) } } label: {
                     Image(systemName: "arrow.up.forward.square")
                 }
@@ -272,7 +272,7 @@ struct BrowserPanel: View {
             .overlay(alignment: .bottom) { Rectangle().fill(.primary.opacity(0.08)).frame(height: 1) }
 
             if session.picking {
-                Text("Click an element to send it to Claude. Esc cancels.")
+                Text("Click an element to add it to the session prompt. Esc cancels.")
                     .font(.caption)
                     .foregroundStyle(Color.accentColor)
                     .frame(maxWidth: .infinity, alignment: .leading)

@@ -1,0 +1,54 @@
+import XCTest
+@testable import omux
+
+final class SessionProviderTests: XCTestCase {
+    func testLegacyWorkspacePreservesClaudeIdentityAndCommand() throws {
+        let id = UUID()
+        let data = Data("""
+        {"command":"claude --model opus","tabs":[{"claudeSessionID":"\(id)","name":"Existing"}]}
+        """.utf8)
+        let group = try JSONDecoder().decode(TabGroup.self, from: data)
+        XCTAssertEqual(group.provider, .claude)
+        XCTAssertEqual(group.tabs[0].claudeSessionID, id)
+        XCTAssertEqual(group.tabs[0].resolvedProvider(in: group), .claude)
+        XCTAssertEqual(group.command, "claude --model opus")
+    }
+
+    func testShellOverrideDoesNotInheritProjectAgent() {
+        let group = TabGroup(name: "Project")
+        let tab = TabItem(name: "Shell", command: "")
+        XCTAssertEqual(tab.resolvedProvider(in: group), .shell)
+    }
+
+    func testCodexIdentitySurvivesRoundTrip() throws {
+        var group = TabGroup(name: "Project")
+        group.provider = .codex
+        group.command = "codex"
+        var tab = TabItem(name: "Codex")
+        tab.codexThreadID = "thread-assigned-by-server"
+        group.tabs = [tab]
+        let restored = try JSONDecoder().decode(TabGroup.self, from: JSONEncoder().encode(group))
+        XCTAssertEqual(restored.tabs[0].resolvedProvider(in: restored), .codex)
+        XCTAssertEqual(restored.tabs[0].codexThreadID, tab.codexThreadID)
+    }
+
+    func testCustomCommandsRemainCustom() {
+        for command in ["env codex", "codex exec task", "npm run dev", "/path/to/wrapper"] {
+            XCTAssertEqual(SessionProvider.infer(command: command), .custom)
+        }
+    }
+
+    func testClaudeStartsANewPinnedConversationInsteadOfContinuingAnotherTab() {
+        let id = UUID()
+        XCTAssertEqual(SessionProvider.claudeCommand("claude --model opus", sessionID: id, conversationExists: false),
+                       "claude --session-id \(id.uuidString.lowercased()) --model opus")
+        XCTAssertEqual(SessionProvider.claudeCommand("claude", sessionID: id, conversationExists: true),
+                       "claude --resume \(id.uuidString.lowercased())")
+    }
+
+    func testExplicitClaudeSessionFlagsArePreserved() {
+        for raw in ["claude --resume abc", "claude --resume=abc", "claude --session-id=abc", "claude --continue"] {
+            XCTAssertEqual(SessionProvider.claudeCommand(raw, sessionID: UUID(), conversationExists: false), raw)
+        }
+    }
+}

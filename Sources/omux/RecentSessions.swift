@@ -1,5 +1,26 @@
 import Foundation
 
+enum RecentConversation: Identifiable {
+    case claude(RecentSession), codex(CodexConversation)
+
+    var id: String {
+        switch self {
+        case .claude(let session): return "claude:" + session.id.uuidString.lowercased()
+        case .codex(let session): return "codex:" + session.id
+        }
+    }
+    var cwd: String {
+        switch self { case .claude(let s): return s.cwd; case .codex(let s): return s.cwd }
+    }
+    var folder: String { (cwd as NSString).abbreviatingWithTildeInPath }
+    var prompt: String {
+        switch self { case .claude(let s): return s.prompt; case .codex(let s): return s.name }
+    }
+    var date: Date {
+        switch self { case .claude(let s): return s.date; case .codex(let s): return s.date }
+    }
+}
+
 /// A Claude Code conversation found in ~/.claude/projects.
 struct RecentSession: Identifiable, Hashable {
     let id: UUID

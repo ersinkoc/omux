@@ -97,6 +97,8 @@ struct FilePanel: View {
             Group {
                 if let agent = store.openAgent, agent.tabID == store.selectedTabID {
                     AgentTranscriptView(ref: agent).id(agent.agentID)
+                } else if let ref = store.openCodexAgent, ref.tabID == store.selectedTabID {
+                    CodexAgentTranscriptView(ref: ref).id(ref.agent.id)
                 } else if let url = previewURL {
                     FilePreview(url: url)
                 } else {
@@ -205,6 +207,7 @@ struct FilePanel: View {
         .onChange(of: selected) { _, path in
             guard let path else { return }
             store.openAgent = nil
+            store.openCodexAgent = nil
             var isDir: ObjCBool = false
             if FileManager.default.fileExists(atPath: path, isDirectory: &isDir), !isDir.boolValue {
                 previewURL = URL(fileURLWithPath: path)
@@ -222,6 +225,7 @@ struct FilePanel: View {
     private func showRequested() {
         guard let path = store.previewRequest else { return }
         store.openAgent = nil
+        store.openCodexAgent = nil
         previewURL = URL(fileURLWithPath: path)
         selected = path
         store.previewRequest = nil

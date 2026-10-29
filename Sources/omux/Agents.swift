@@ -74,6 +74,7 @@ final class AgentMonitor: ObservableObject {
         var sessions: [AgentScanner.Session] = []
         var children: [UUID: [TabRuntime.StatusChild]] = [:]
         for entry in store.allTabs {
+            guard store.provider(of: entry.tab) == .claude else { continue }
             let rt = store.runtime[entry.tab.id] ?? TabRuntime()
             let active = !rt.exited && (rt.busy || rt.statusState == .working || rt.statusState == .blocked)
             guard active || agents[entry.tab.id] != nil else { continue }

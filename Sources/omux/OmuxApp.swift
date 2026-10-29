@@ -76,12 +76,12 @@ struct SettingsView: View {
                 Toggle("Wrap long lines in file preview", isOn: $wrapLines)
             }
             Section("Sessions") {
-                Toggle("Auto-resume Claude sessions at launch", isOn: $autoResume)
+                Toggle("Auto-resume agent sessions at launch", isOn: $autoResume)
                 Text("Off: restored sessions stay stopped until you press ▶. Clicking one only opens its shell.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Toggle("Confirm before quitting while sessions are running", isOn: $confirmQuit)
-                Text("Quitting always stops every session. Claude conversations resume on the next launch.")
+                Text("Quitting stops every session. Saved Claude Code and Codex conversations can be continued on the next launch.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -184,6 +184,7 @@ struct SessionHeader: View {
                 Text(tab.name)
                     .font(.system(size: 11, weight: .semibold))
                     .lineLimit(1)
+                Text(store.provider(of: tab).label).font(.caption2).foregroundStyle(.tertiary)
                 if let line = rt.statusLine(showFolder: false) {
                     Text(line)
                         .font(.caption2)
@@ -194,7 +195,9 @@ struct SessionHeader: View {
                     PermissionButtons(tabID: tab.id).controlSize(.mini)
                 }
                 Spacer()
-                AgentPill(tabID: tab.id)
+                if store.provider(of: tab) == .codex {
+                    CodexAgents(tabID: tab.id, compact: true)
+                } else { AgentPill(tabID: tab.id) }
                 if let worktree = tab.worktree {
                     PullRequestChip(tabID: tab.id)
                     BranchChip(tabID: tab.id, worktree: worktree)
@@ -208,9 +211,9 @@ struct SessionHeader: View {
                 if rt.busy {
                     Button { store.stop(tab.id) } label: { Image(systemName: "stop.fill") }
                         .help("Interrupt (Ctrl-C)")
-                } else {
+                } else if !rt.agentConnected {
                     Button { store.start(tab.id) } label: { Image(systemName: "play.fill") }
-                        .help("Continue this Claude conversation")
+                        .help("Start or continue this session")
                 }
             } else {
                 Spacer()
@@ -235,6 +238,8 @@ struct AppCommands: Commands {
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
             Button("New Session") { store.newTab() }.keyboardShortcut("t")
+            Button("New Codex Session") { store.newTab(command: "codex") }
+            Button("New Claude Code Session") { store.newTab(command: "claude") }
             Button("New Shell") { store.newTab(command: "") }.keyboardShortcut("t", modifiers: [.command, .shift])
             Button("New Session in Worktree…") {
                 if let id = store.selectedGroup?.id ?? store.groups.first?.id { store.newWorktreeGroupID = id }
@@ -243,7 +248,7 @@ struct AppCommands: Commands {
             Button("New Project") { store.newGroup() }.keyboardShortcut("n", modifiers: [.command, .shift])
             Divider()
             Button("Open Folder…") { store.openFolderPanel() }.keyboardShortcut("o")
-            Button("Open Recent Claude Session…") { store.showRecentSessions = true }
+            Button("Open Recent Agent Session…") { store.showRecentSessions = true }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
         }
         CommandGroup(replacing: .saveItem) {
@@ -269,7 +274,7 @@ struct AppCommands: Commands {
             Button("Interrupt (Ctrl-C)") { if let id = store.selectedTabID { store.stop(id) } }
                 .keyboardShortcut(".", modifiers: [.command, .shift])
             Button("Kill Session") { if let id = store.selectedTabID { store.kill(id) } }
-            Button("Continue Claude Conversation") { if let id = store.selectedTabID { store.start(id) } }
+            Button("Start or Continue Session") { if let id = store.selectedTabID { store.start(id) } }
                 .keyboardShortcut(.return, modifiers: [.command, .shift])
             Divider()
             Button("Jump to Session…") { store.showQuickSwitcher = true }.keyboardShortcut("k")
@@ -326,7 +331,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if confirm, running > 0 {
             let alert = NSAlert()
             alert.messageText = "Quit omux?"
-            alert.informativeText = "\(running) session\(running == 1 ? " is" : "s are") running. Claude sessions resume automatically on next launch."
+            alert.informativeText = "\(running) session\(running == 1 ? " is" : "s are") running. Agent conversation IDs are saved so you can continue them next launch."
             alert.addButton(withTitle: "Quit")
             alert.addButton(withTitle: "Cancel")
             if alert.runModal() != .alertFirstButtonReturn { return .terminateCancel }

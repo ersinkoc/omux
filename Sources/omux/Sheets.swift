@@ -79,7 +79,7 @@ struct TabEditSheet: View {
     let tabID: UUID
 
     private enum CommandMode: String, CaseIterable, Identifiable {
-        case inherit = "Project default", shell = "Plain shell", custom = "Custom"
+        case inherit = "Project default", claude = "Claude Code", codex = "Codex", shell = "Plain shell", custom = "Custom"
         var id: String { rawValue }
     }
 
@@ -88,6 +88,17 @@ struct TabEditSheet: View {
     @State private var mode: CommandMode = .inherit
     @State private var customCommand = ""
     @State private var sessionID = UUID()
+    @State private var codexThreadID: String?
+
+    private var provider: SessionProvider {
+        switch mode {
+        case .inherit: return store.group(containing: tabID)?.provider ?? .shell
+        case .claude: return .claude
+        case .codex: return .codex
+        case .shell: return .shell
+        case .custom: return .custom
+        }
+    }
 
     var body: some View {
         let group = store.group(containing: tabID)
@@ -106,16 +117,19 @@ struct TabEditSheet: View {
                 Text(group?.command?.isEmpty == false ? group!.command! : "plain shell")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            LabeledContent("Claude session") {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(sessionID.uuidString.lowercased())
-                        .font(.caption.monospaced())
-                        .textSelection(.enabled)
-                        .foregroundStyle(.secondary)
-                    Button("Start a fresh conversation on next restart") {
-                        sessionID = UUID()
+            if provider == .claude || provider == .codex {
+                LabeledContent(provider == .codex ? "Codex conversation" : "Claude conversation") {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(provider == .codex ? codexThreadID ?? "New conversation" : sessionID.uuidString.lowercased())
+                            .font(.caption.monospaced())
+                            .textSelection(.enabled)
+                            .foregroundStyle(.secondary)
+                        Button("Start a fresh conversation on next restart") {
+                            if provider == .codex { codexThreadID = nil }
+                            else { sessionID = UUID() }
+                        }
+                        .controlSize(.small)
                     }
-                    .controlSize(.small)
                 }
             }
             HStack {
@@ -130,12 +144,24 @@ struct TabEditSheet: View {
             guard let tab = store.tab(tabID) else { return }
             name = tab.name
             directory = tab.directory ?? ""
-            switch tab.command {
-            case nil: mode = .inherit
-            case "": mode = .shell
-            case let cmd?: mode = .custom; customCommand = cmd
+            switch tab.provider {
+            case .claude:
+                if let command = tab.command, command != "claude" { mode = .custom; customCommand = command }
+                else { mode = .claude }
+            case .codex: mode = .codex
+            case .shell: mode = .shell
+            case .custom: mode = .custom; customCommand = tab.command ?? ""
+            case nil:
+                switch tab.command {
+                case nil: mode = .inherit
+                case "": mode = .shell
+                case "codex": mode = .codex
+                case "claude": mode = .claude
+                case let cmd?: mode = .custom; customCommand = cmd
+                }
             }
             sessionID = tab.claudeSessionID
+            codexThreadID = tab.codexThreadID
         }
     }
 
@@ -144,11 +170,14 @@ struct TabEditSheet: View {
             tab.name = name.trimmingCharacters(in: .whitespaces).isEmpty ? tab.name : name
             tab.directory = directory.isEmpty ? nil : directory
             switch mode {
-            case .inherit: tab.command = nil
-            case .shell: tab.command = ""
-            case .custom: tab.command = customCommand.isEmpty ? nil : customCommand
+            case .inherit: tab.command = nil; tab.provider = nil
+            case .claude: tab.command = "claude"; tab.provider = .claude
+            case .codex: tab.command = "codex"; tab.provider = .codex
+            case .shell: tab.command = ""; tab.provider = .shell
+            case .custom: tab.command = customCommand; tab.provider = SessionProvider.infer(command: customCommand)
             }
             tab.claudeSessionID = sessionID
+            tab.codexThreadID = codexThreadID
         }
         dismiss()
     }
@@ -162,6 +191,7 @@ struct GroupEditSheet: View {
     @State private var name = ""
     @State private var directory = ""
     @State private var command = ""
+    @State private var provider = SessionProvider.claude
     @State private var useWorktrees = false
 
     var body: some View {
@@ -171,7 +201,12 @@ struct GroupEditSheet: View {
                 TextField("Folder", text: $directory, prompt: Text("~"))
                 Button("Choose…") { if let dir = chooseDirectory(current: directory) { directory = dir } }
             }
-            TextField("Command for new sessions", text: $command, prompt: Text("leave empty for a plain shell"))
+            Picker("New sessions", selection: $provider) {
+                ForEach(SessionProvider.allCases) { Text($0.label).tag($0) }
+            }
+            if provider == .custom {
+                TextField("Command", text: $command)
+            }
             Text("Applies when a session starts. Existing sessions keep running.")
                 .font(.caption).foregroundStyle(.secondary)
             Toggle("Give new sessions their own Git worktree", isOn: $useWorktrees)
@@ -188,6 +223,7 @@ struct GroupEditSheet: View {
             name = group.name
             directory = group.directory ?? ""
             command = group.command ?? ""
+            provider = command == group.provider.command ? group.provider : .custom
             useWorktrees = group.useWorktrees
         }
     }
@@ -196,7 +232,8 @@ struct GroupEditSheet: View {
         store.updateGroup(groupID) { group in
             group.name = name.trimmingCharacters(in: .whitespaces).isEmpty ? group.name : name
             group.directory = directory.isEmpty ? nil : directory
-            group.command = command
+            group.command = provider == .custom ? command : provider.command
+            group.provider = provider == .custom ? SessionProvider.infer(command: command) : provider
             group.useWorktrees = useWorktrees
         }
         dismiss()
@@ -206,20 +243,22 @@ struct GroupEditSheet: View {
 struct RecentSessionsSheet: View {
     @EnvironmentObject var store: Store
     @Environment(\.dismiss) private var dismiss
-    @State private var sessions: [RecentSession] = []
+    @State private var sessions: [RecentConversation] = []
     @State private var loaded = false
     @State private var query = ""
     @State private var byFolder = false
+    @State private var provider = SessionProvider.claude
+    @State private var error: String?
     @FocusState private var focused: Bool
 
-    private var matches: [RecentSession] {
+    private var matches: [RecentConversation] {
         sessions.filter { query.isEmpty || "\($0.prompt) \($0.folder)".localizedCaseInsensitiveContains(query) }
     }
 
     /// Folders ordered by their most recent session; sessions stay newest-first within each.
-    private var folders: [(folder: String, sessions: [RecentSession])] {
+    private var folders: [(folder: String, sessions: [RecentConversation])] {
         var order: [String] = []
-        var grouped: [String: [RecentSession]] = [:]
+        var grouped: [String: [RecentConversation]] = [:]
         for session in matches {
             if grouped[session.folder] == nil { order.append(session.folder) }
             grouped[session.folder, default: []].append(session)
@@ -227,12 +266,20 @@ struct RecentSessionsSheet: View {
         return order.map { ($0, grouped[$0]!) }
     }
 
-    private var openIDs: Set<UUID> { Set(store.allTabs.map(\.tab.claudeSessionID)) }
+    private var openIDs: Set<String> {
+        Set(store.allTabs.compactMap { entry in
+            switch store.provider(of: entry.tab) {
+            case .claude: return "claude:" + entry.tab.claudeSessionID.uuidString.lowercased()
+            case .codex: return entry.tab.codexThreadID.map { "codex:" + $0 }
+            case .shell, .custom: return nil
+            }
+        })
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                TextField("Search recent Claude sessions…", text: $query)
+                TextField("Search recent conversations…", text: $query)
                     .textFieldStyle(.plain)
                     .font(.title3)
                     .focused($focused)
@@ -246,11 +293,18 @@ struct RecentSessionsSheet: View {
                 .fixedSize()
             }
             .padding(12)
+            Picker("Agent", selection: $provider) {
+                Text("Claude Code").tag(SessionProvider.claude)
+                Text("Codex").tag(SessionProvider.codex)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 10)
             Divider()
             if !loaded {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if matches.isEmpty {
-                Text(sessions.isEmpty ? "No Claude sessions found in ~/.claude/projects" : "No matches")
+                Text(error ?? (sessions.isEmpty ? "No \(provider.label) conversations found" : "No matches"))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -269,15 +323,28 @@ struct RecentSessionsSheet: View {
             }
         }
         .frame(width: 560, height: 440)
+        .onAppear { provider = store.selectedProvider == .codex ? .codex : .claude }
         .onExitCommand { dismiss() }
-        .task {
+        .task(id: provider) {
             focused = true
-            sessions = await Task.detached { RecentSession.load() }.value
-            loaded = true
+            loaded = false; error = nil; sessions = []
+            do {
+                let result: [RecentConversation]
+                if provider == .codex {
+                    result = try await CodexManager.shared.recent().map(RecentConversation.codex)
+                } else {
+                    result = await Task.detached { RecentSession.load().map(RecentConversation.claude) }.value
+                }
+                guard !Task.isCancelled else { return }
+                sessions = result; loaded = true
+            } catch {
+                guard !Task.isCancelled else { return }
+                self.error = error.localizedDescription; loaded = true
+            }
         }
     }
 
-    private func row(_ session: RecentSession, showFolder: Bool) -> some View {
+    private func row(_ session: RecentConversation, showFolder: Bool) -> some View {
         Button { pick(session) } label: {
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
@@ -301,8 +368,11 @@ struct RecentSessionsSheet: View {
         .buttonStyle(.plain)
     }
 
-    private func pick(_ session: RecentSession) {
-        store.openClaudeSession(session)
+    private func pick(_ session: RecentConversation) {
+        switch session {
+        case .claude(let recent): store.openClaudeSession(recent)
+        case .codex(let recent): store.openCodexSession(recent)
+        }
         dismiss()
     }
 }

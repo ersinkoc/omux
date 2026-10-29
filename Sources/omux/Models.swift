@@ -35,9 +35,13 @@ struct TabItem: Identifiable, Codable, Hashable {
     var directory: String?
     /// nil inherits the group's command; "" means a plain shell.
     var command: String?
+    /// nil inherits the project, or infers the provider of a legacy command.
+    var provider: SessionProvider?
     var color: TabColor = .none
     /// Stable Claude Code session id so the conversation resumes across relaunches.
     var claudeSessionID = UUID()
+    /// Assigned by Codex, never guessed from the working directory or latest chat.
+    var codexThreadID: String?
     /// Set when the session runs in its own git worktree; `directory` is the worktree.
     var worktree: Worktree?
 
@@ -55,9 +59,15 @@ struct TabItem: Identifiable, Codable, Hashable {
         name = try c.decodeIfPresent(String.self, forKey: .name) ?? "Session"
         directory = try c.decodeIfPresent(String.self, forKey: .directory)
         command = try c.decodeIfPresent(String.self, forKey: .command)
+        provider = try c.decodeIfPresent(SessionProvider.self, forKey: .provider)
         color = try c.decodeIfPresent(TabColor.self, forKey: .color) ?? .none
         claudeSessionID = try c.decodeIfPresent(UUID.self, forKey: .claudeSessionID) ?? UUID()
+        codexThreadID = try c.decodeIfPresent(String.self, forKey: .codexThreadID)
         worktree = try c.decodeIfPresent(Worktree.self, forKey: .worktree)
+    }
+
+    func resolvedProvider(in group: TabGroup) -> SessionProvider {
+        provider ?? command.map { SessionProvider.infer(command: $0) } ?? group.provider
     }
 }
 
@@ -74,6 +84,7 @@ struct TabGroup: Identifiable, Codable, Hashable {
     var name: String
     var directory: String?
     var command: String? = "claude"
+    var provider: SessionProvider = .claude
     var isCollapsed = false
     /// New sessions get their own git worktree.
     var useWorktrees = false
@@ -91,6 +102,7 @@ struct TabGroup: Identifiable, Codable, Hashable {
         name = try c.decodeIfPresent(String.self, forKey: .name) ?? "Project"
         directory = try c.decodeIfPresent(String.self, forKey: .directory)
         command = try c.decodeIfPresent(String.self, forKey: .command)
+        provider = try c.decodeIfPresent(SessionProvider.self, forKey: .provider) ?? SessionProvider.infer(command: command)
         isCollapsed = try c.decodeIfPresent(Bool.self, forKey: .isCollapsed) ?? false
         useWorktrees = try c.decodeIfPresent(Bool.self, forKey: .useWorktrees) ?? false
         tabs = try c.decodeIfPresent([TabItem].self, forKey: .tabs) ?? []
@@ -104,6 +116,8 @@ struct Workspace: Codable {
 
 /// Live, non-persisted state of one terminal tab.
 struct TabRuntime: Equatable {
+    var provider: SessionProvider?
+    var agentConnected = false
     var title = ""
     var cwd: String?
     var hasActivity = false
@@ -160,6 +174,13 @@ struct TabRuntime: Equatable {
 
 enum Persistence {
     static let directory: URL = {
+        // Development smoke tests can use disposable state without opening or
+        // replacing the user's real workspace.
+        if let path = ProcessInfo.processInfo.environment["OMUX_WORKSPACE_DIRECTORY"], !path.isEmpty {
+            let dir = URL(fileURLWithPath: path, isDirectory: true)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            return dir
+        }
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let dir = base.appendingPathComponent("omux", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

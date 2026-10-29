@@ -40,14 +40,17 @@ final class Store: ObservableObject {
     @Published private(set) var mentionedURLs: [String] = []
     /// The project a "New Session in Worktree" sheet is open for.
     @Published var newWorktreeGroupID: UUID?
+    var newWorktreeProvider: SessionProvider?
     /// The subagent whose transcript the files panel shows.
     @Published var openAgent: AgentRef?
+    @Published var openCodexAgent: CodexAgentRef?
     /// A git action in progress per session ("Pushing…"), shown in the Changes tab.
     @Published var gitActivity: [UUID: String] = [:]
     /// One web view per session, kept while the session lives.
     private var browsers: [UUID: BrowserSession] = [:]
 
     private var terminals: [UUID: TermView] = [:]
+    private var codexStarts: [UUID: Task<Void, Never>] = [:]
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
@@ -79,6 +82,18 @@ final class Store: ObservableObject {
             }
         }
 
+        CodexManager.shared.onStatus = { [weak self] id, status in
+            guard let self, self.runtime[id]?.provider == .codex, self.terminals[id] != nil else { return }
+            self.applyStatus(status.state, kind: status.kind, message: status.detail, children: [], for: id)
+            self.update(id) {
+                $0.busy = status.state == .working || status.state == .blocked
+                if !CodexManager.shared.isConnected(id) { $0.agentConnected = false }
+            }
+        }
+        CodexManager.shared.onThreadChange = { [weak self] id, thread in
+            self?.updateTab(id) { $0.codexThreadID = thread }
+            self?.save()
+        }
         if saved == nil { save() }
         if UserDefaults.standard.bool(forKey: Prefs.autoResume) {
             startAllSessions()
@@ -107,6 +122,12 @@ final class Store: ObservableObject {
 
     var selectedTab: TabItem? { selectedTabID.flatMap(tab) }
 
+    func provider(of tab: TabItem) -> SessionProvider {
+        runtime[tab.id]?.provider ?? group(containing: tab.id).map { tab.resolvedProvider(in: $0) } ?? .shell
+    }
+
+    var selectedProvider: SessionProvider { selectedTab.map(provider(of:)) ?? .shell }
+
     var selectedGroup: TabGroup? {
         selectedTabID.flatMap(group(containing:)) ?? groups.first
     }
@@ -125,7 +146,8 @@ final class Store: ObservableObject {
     func terminal(for tabID: UUID) -> TermView? {
         if let view = terminals[tabID] { return view }
         guard let loc = location(of: tabID) else { return nil }
-        return makeTerminal(tab: groups[loc.group].tabs[loc.tab], group: groups[loc.group], command: "")
+        return makeTerminal(tab: groups[loc.group].tabs[loc.tab], group: groups[loc.group],
+                            command: UserDefaults.standard.bool(forKey: Prefs.autoResume) ? nil : "")
     }
 
     private func startAllSessions() {
@@ -171,13 +193,18 @@ final class Store: ObservableObject {
             "LOGNAME": inherited["LOGNAME"] ?? NSUserName(),
             "SHELL": shell,
             "TMPDIR": inherited["TMPDIR"] ?? NSTemporaryDirectory(),
-            "PATH": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+            "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
             "LANG": inherited["LANG"] ?? "en_US.UTF-8",
             "TERM": "xterm-256color",
             "COLORTERM": "truecolor",
             "TERM_PROGRAM": "omux",
         ]
         if let enc = inherited["__CF_USER_TEXT_ENCODING"] { env["__CF_USER_TEXT_ENCODING"] = enc }
+        if let codexHome = inherited["CODEX_HOME"] { env["CODEX_HOME"] = codexHome }
+        let provider = tab.resolvedProvider(in: group)
+        if provider == .codex {
+            env["OMUX_CODEX_TOKEN"] = CodexManager.shared.connection(for: tab.id).token
+        }
 
         view.startProcess(
             executable: shell,
@@ -187,15 +214,45 @@ final class Store: ObservableObject {
             currentDirectory: dir
         )
         update(tab.id) {
+            $0.provider = provider; $0.agentConnected = false
             $0.exited = false; $0.cwd = dir; $0.title = ""
             $0.statusState = nil; $0.statusKind = nil; $0.statusDetail = nil; $0.statusChildren = []
         }
 
-        if let command = command ?? startupCommand(tab: tab, group: group), !command.isEmpty {
+        if provider == .codex, command == nil {
+            startCodex(view, tab: tab, cwd: dir)
+        } else if let command = command ?? startupCommand(tab: tab, group: group), !command.isEmpty {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 view.send(txt: command + "\n")
             }
         }
+    }
+
+    private func startCodex(_ view: TermView, tab: TabItem, cwd: String) {
+        guard codexStarts[tab.id] == nil else { return }
+        update(tab.id) { $0.busy = true; $0.statusState = .working; $0.statusDetail = "Connecting to Codex…" }
+        codexStarts[tab.id] = Task { [weak self, weak view] in
+            defer {
+                if let self, let view, self.terminals[tab.id] === view { self.codexStarts[tab.id] = nil }
+            }
+            do {
+                let launch = try await CodexManager.shared.prepare(tabID: tab.id, threadID: tab.codexThreadID, cwd: cwd, name: tab.name)
+                try Task.checkCancellation()
+                guard let self, let view, self.terminals[tab.id] === view else { return }
+                self.updateTab(tab.id) { $0.codexThreadID = launch.threadID }
+                self.save()
+                self.update(tab.id) { $0.agentConnected = true; $0.busy = false }
+                view.send(txt: launch.command + "\n")
+            } catch {
+                guard !Task.isCancelled, let self, let view, self.terminals[tab.id] === view else { return }
+                self.update(tab.id) { $0.busy = false; $0.statusState = .error; $0.statusDetail = error.localizedDescription }
+            }
+        }
+    }
+
+    private func closeCodex(_ id: UUID) {
+        codexStarts.removeValue(forKey: id)?.cancel()
+        CodexManager.shared.close(id)
     }
 
     /// Kills the shell and everything it spawned (claude, node, …), not just the shell.
@@ -209,6 +266,14 @@ final class Store: ObservableObject {
     /// Interrupts whatever runs in the shell, like Ctrl-C. Sent twice because Claude Code
     /// asks for a second Ctrl-C to exit. The shell itself stays at its prompt.
     func stop(_ id: UUID) {
+        if runtime[id]?.provider == .codex {
+            if codexStarts[id] != nil { kill(id); return }
+            Task {
+                do { try await CodexManager.shared.interrupt(id) }
+                catch { Self.showError("Couldn't interrupt Codex", error.localizedDescription) }
+            }
+            return
+        }
         guard let view = terminals[id], !(runtime[id]?.exited ?? true) else { return }
         view.send(txt: "\u{03}")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { view.send(txt: "\u{03}") }
@@ -217,9 +282,10 @@ final class Store: ObservableObject {
 
     /// Force-kills the session's whole process tree; the tab shows as exited.
     func kill(_ id: UUID) {
+        closeCodex(id)
         guard let view = terminals[id] else { return }
         killTree(view)
-        update(id) { $0.exited = true; $0.statusState = nil; $0.busy = false }
+        update(id) { $0.exited = true; $0.statusState = nil; $0.busy = false; $0.agentConnected = false }
     }
 
     /// Rescans the selected session's scrollback for file paths and local URLs (background, cheap).
@@ -250,6 +316,13 @@ final class Store: ObservableObject {
     /// Answers Claude Code's permission prompt: Return picks its default "Yes",
     /// Escape is its "No, and tell Claude what to do differently".
     func answerPermission(_ id: UUID, allow: Bool) {
+        if runtime[id]?.provider == .codex {
+            Task {
+                do { try await CodexManager.shared.answer(tabID: id, allow: allow) }
+                catch { Self.showError("Couldn't answer Codex", error.localizedDescription) }
+            }
+            return
+        }
         guard let view = terminals[id], runtime[id]?.awaitsPermission == true else { return }
         view.send(txt: allow ? "\r" : "\u{1b}")
     }
@@ -261,6 +334,7 @@ final class Store: ObservableObject {
     }
 
     func openAgentTranscript(_ agent: SubAgent, in tabID: UUID) {
+        openCodexAgent = nil
         openAgent = AgentRef(tabID: tabID, agent: agent)
         showPanel(.files)
     }
@@ -277,6 +351,11 @@ final class Store: ObservableObject {
         guard let view = terminals[id], !(runtime[id]?.exited ?? true) else { return }
         let pid = view.process.shellPid
         let busy = pid > 0 && Self.hasChildProcess(of: pid)
+        if runtime[id]?.provider == .codex {
+            guard codexStarts[id] == nil else { return }
+            if !busy { update(id) { $0.agentConnected = false; $0.busy = false } }
+            return
+        }
         update(id) { $0.busy = busy }
     }
 
@@ -290,13 +369,34 @@ final class Store: ObservableObject {
         return procs.prefix(size / MemoryLayout<kinfo_proc>.stride).contains { $0.kp_eproc.e_ppid == pid }
     }
 
-    /// Continues the tab's Claude conversation: relaunches the tab if it was stopped,
-    /// otherwise runs the command in its live shell.
+    /// Starts the selected provider in an idle shell or resumes its exact saved chat.
     func start(_ id: UUID) {
         guard let loc = location(of: id) else { return }
         let tab = groups[loc.group].tabs[loc.tab]
+        if let view = terminals[id], !(runtime[id]?.exited ?? true) {
+            if runtime[id]?.provider == .codex, runtime[id]?.statusState == .error,
+               !CodexManager.shared.isConnected(id) {
+                restart(id)
+                return
+            }
+            guard !Self.hasChildProcess(of: view.process.shellPid), codexStarts[id] == nil else { return }
+            if runtime[id]?.provider != tab.resolvedProvider(in: groups[loc.group]) { restart(id); return }
+        }
+        if tab.resolvedProvider(in: groups[loc.group]) != .claude {
+            if let view = terminals[id], !(runtime[id]?.exited ?? true) {
+                // A live Codex TUI is not an idle shell, even when its agent is idle.
+                if provider(of: tab) == .codex {
+                    startCodex(view, tab: tab, cwd: runtime[id]?.cwd ?? directory(of: tab) ?? NSHomeDirectory())
+                } else if let command = startupCommand(tab: tab, group: groups[loc.group]), !command.isEmpty {
+                    view.send(txt: command + "\n")
+                }
+            } else {
+                restart(id)
+            }
+            return
+        }
         let session = tab.claudeSessionID.uuidString.lowercased()
-        let command = Self.claudeSessionExists(session) ? "claude --resume \(session)" : "claude --continue"
+        let command = startupCommand(tab: tab, group: groups[loc.group]) ?? "claude --session-id \(session)"
         if let view = terminals[id], !(runtime[id]?.exited ?? true) {
             guard !(runtime[id]?.busy ?? false) else { return }
             view.send(txt: command + "\n")
@@ -312,15 +412,11 @@ final class Store: ObservableObject {
     /// conversation resumes on relaunch.
     func startupCommand(tab: TabItem, group: TabGroup) -> String? {
         let raw = (tab.command ?? group.command ?? "").trimmingCharacters(in: .whitespaces)
+        if tab.resolvedProvider(in: group) == .shell { return nil }
         guard !raw.isEmpty else { return nil }
-        let parts = raw.split(separator: " ", maxSplits: 1).map(String.init)
-        guard parts[0] == "claude" else { return raw }
-        let rest = parts.count > 1 ? parts[1] : ""
-        let words = Set(rest.split(separator: " ").map(String.init))
-        if !words.isDisjoint(with: ["--resume", "-r", "--continue", "-c", "--session-id"]) { return raw }
+        guard tab.resolvedProvider(in: group) == .claude else { return raw }
         let session = tab.claudeSessionID.uuidString.lowercased()
-        let flag = Self.claudeSessionExists(session) ? "--resume \(session)" : "--session-id \(session)"
-        return ["claude", flag, rest].filter { !$0.isEmpty }.joined(separator: " ")
+        return SessionProvider.claudeCommand(raw, sessionID: tab.claudeSessionID, conversationExists: Self.claudeSessionExists(session))
     }
 
     /// Claude Code writes each conversation to ~/.claude/projects/<project>/<session>.jsonl.
@@ -346,7 +442,7 @@ final class Store: ObservableObject {
 
     /// Opens an existing Claude conversation as a session in the project for its folder.
     func openClaudeSession(_ recent: RecentSession) {
-        if let existing = allTabs.first(where: { $0.tab.claudeSessionID == recent.id }) {
+        if let existing = allTabs.first(where: { $0.tab.claudeSessionID == recent.id && provider(of: $0.tab) == .claude }) {
             selectedTabID = existing.tab.id
             return
         }
@@ -358,11 +454,31 @@ final class Store: ObservableObject {
             gi = groups.count - 1
         }
         var tab = TabItem(name: recent.tabName.isEmpty ? "Session" : recent.tabName)
+        tab.provider = .claude
+        tab.command = "claude"
         tab.claudeSessionID = recent.id
         groups[gi].tabs.append(tab)
         groups[gi].isCollapsed = false
         makeTerminal(tab: tab, group: groups[gi])
         selectedTabID = tab.id
+    }
+
+    func openCodexSession(_ recent: CodexConversation) {
+        if let existing = allTabs.first(where: { $0.tab.codexThreadID == recent.id && provider(of: $0.tab) == .codex }) {
+            selectedTabID = existing.tab.id
+            return
+        }
+        let groupID: UUID
+        if let group = groups.first(where: { $0.directory == recent.cwd }) {
+            groupID = group.id
+        } else {
+            var group = TabGroup(name: (recent.cwd as NSString).lastPathComponent, directory: recent.cwd)
+            group.provider = .codex; group.command = "codex"
+            groups.append(group); groupID = group.id
+        }
+        var tab = TabItem(name: String(recent.name.prefix(60)), command: "codex")
+        tab.provider = .codex; tab.codexThreadID = recent.id
+        addSession(tab, to: groupID)
     }
 
     func openFolderPanel() {
@@ -393,15 +509,10 @@ final class Store: ObservableObject {
         case .openPath(let path):
             previewRequest = path
         case .status(let state, let kind, let message, let children):
-            let previous = runtime[id]?.statusState
-            update(id) {
-                $0.statusState = state
-                $0.statusKind = kind
-                $0.statusDetail = message
-                $0.statusChildren = children
-                if state == .blocked || state == .done, !isWatching(id) { $0.needsAttention = true }
-            }
-            if state != previous { notifyStatusChange(id) }
+            // Codex also emits terminal OSC status. Its protocol is authoritative,
+            // particularly for approval IDs; mixing both can revive stale buttons.
+            guard runtime[id]?.provider != .codex else { return }
+            applyStatus(state, kind: kind, message: message, children: children, for: id)
         case .notification(let title, let body):
             guard !isWatching(id) else { return }
             update(id) { $0.needsAttention = true }
@@ -409,6 +520,15 @@ final class Store: ObservableObject {
                 notify(id, subtitle: title, body: body)
             }
         }
+    }
+
+    private func applyStatus(_ state: TabRuntime.StatusState?, kind: String?, message: String?, children: [TabRuntime.StatusChild], for id: UUID) {
+        let previous = runtime[id]?.statusState
+        update(id) {
+            $0.statusState = state; $0.statusKind = kind; $0.statusDetail = message; $0.statusChildren = children
+            if state == .blocked || state == .done, !isWatching(id) { $0.needsAttention = true }
+        }
+        if state != previous { notifyStatusChange(id) }
     }
 
     /// Notifies when a session you aren't looking at starts waiting on you, or finishes.
@@ -468,7 +588,8 @@ final class Store: ObservableObject {
             newGroup()
             return
         }
-        if command == nil, groups[gi].useWorktrees {
+        if command != "", groups[gi].useWorktrees {
+            newWorktreeProvider = command.map { SessionProvider.infer(command: $0) }
             newWorktreeGroupID = groups[gi].id
             return
         }
@@ -489,6 +610,7 @@ final class Store: ObservableObject {
     }
 
     func closeTab(_ id: UUID) {
+        closeCodex(id)
         guard let loc = location(of: id) else { return }
         if let view = terminals.removeValue(forKey: id) {
             killTree(view)
@@ -498,6 +620,7 @@ final class Store: ObservableObject {
         Notifier.shared.clear(tabID: id)
         browsers.removeValue(forKey: id)?.close()
         if openAgent?.tabID == id { openAgent = nil }
+        if openCodexAgent?.tabID == id { openCodexAgent = nil }
         groups[loc.group].tabs.remove(at: loc.tab)
         if selectedTabID == id {
             let siblings = groups[loc.group].tabs
@@ -506,6 +629,7 @@ final class Store: ObservableObject {
     }
 
     func restart(_ id: UUID) {
+        closeCodex(id)
         guard let loc = location(of: id) else { return }
         if let view = terminals.removeValue(forKey: id) {
             killTree(view)
@@ -656,6 +780,8 @@ final class Store: ObservableObject {
     /// Saves the layout and kills every session's process tree, running or not.
     func prepareForTermination() {
         save()
+        codexStarts.values.forEach { $0.cancel() }
+        CodexManager.shared.shutdown()
         terminals.values.forEach(killTree)
     }
 }

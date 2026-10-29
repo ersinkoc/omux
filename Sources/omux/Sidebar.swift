@@ -36,7 +36,7 @@ struct Sidebar: View {
                 Button { store.openFolderPanel() } label: { Image(systemName: "folder.badge.plus") }
                     .help("Open folder as a project (⌘O)")
                 Button { store.showRecentSessions = true } label: { Image(systemName: "clock.arrow.circlepath") }
-                    .help("Open recent Claude session (⇧⌘O)")
+                    .help("Open recent agent session (⇧⌘O)")
                 SettingsLink { Image(systemName: "gearshape") }
                     .help("Settings (⌘,)")
             }
@@ -72,7 +72,8 @@ struct Sidebar: View {
             // Empty-space menu; rows and project headers override it with their own.
             Button("New Project") { store.newGroup() }
             Button("Open Folder as Project…") { store.openFolderPanel() }
-            Button("Open Recent Claude Session…") { store.showRecentSessions = true }
+            Button("Open Recent Agent Session…") { store.showRecentSessions = true }
+            Button("New Codex Session") { store.newTab(command: "codex") }
             Divider()
             Button("New Session") { store.newTab() }
             Button("New Shell") { store.newTab(command: "") }
@@ -118,7 +119,10 @@ struct TabRow: View {
                 if store.renamingID == tab.id {
                     RenameField(initial: tab.name) { store.rename(tab.id, to: $0) }
                 } else {
-                    Text(tab.name).lineLimit(1)
+                    HStack(spacing: 5) {
+                        Text(tab.name).lineLimit(1)
+                        Text(store.provider(of: tab).label).font(.caption2).foregroundStyle(.tertiary)
+                    }
                 }
                 if let worktree = tab.worktree {
                     HStack(spacing: 3) {
@@ -148,16 +152,20 @@ struct TabRow: View {
                         .help("The pull request was merged. Close this session and delete its worktree and branch.")
                         .padding(.top, 3)
                 }
-                AgentRows(tabID: tab.id, selected: store.selectedTabID == tab.id)
+                if store.provider(of: tab) == .codex {
+                    CodexAgents(tabID: tab.id)
+                } else {
+                    AgentRows(tabID: tab.id, selected: store.selectedTabID == tab.id)
+                }
             }
             Spacer(minLength: 4)
             if hovering {
                 if rt.busy {
                     Button { store.stop(tab.id) } label: { Image(systemName: "stop.fill") }
                         .help("Interrupt (Ctrl-C)")
-                } else {
+                } else if !rt.agentConnected {
                     Button { store.start(tab.id) } label: { Image(systemName: "play.fill") }
-                        .help("Continue this Claude conversation")
+                        .help("Start or continue this session")
                 }
             } else if rt.needsAttention {
                 Image(systemName: "bell.fill").font(.caption).foregroundStyle(.orange)
