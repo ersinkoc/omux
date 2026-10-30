@@ -68,7 +68,7 @@ final class TermView: LocalProcessTerminalView {
         events.owner = self
         processDelegate = events
         apply(Theme.current)
-        registerForDraggedTypes([.fileURL])
+        registerForDraggedTypes([.fileURL, .png, .tiff] + NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) })
         // Observed, not handled, so SwiftTerm keeps drawing OSC 9;4 progress itself.
         oscObservation = observeOscEvents { [weak self] event in
             guard let note = Self.notification(code: event.code, payload: event.payload) else { return }
@@ -121,24 +121,68 @@ final class TermView: LocalProcessTerminalView {
     /// Codex read as attachments. Text pastes as before; an image only wins when there is no text.
     override func paste(_ sender: Any) {
         let board = NSPasteboard.general
-        if let urls = board.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty {
-            paste(Self.shellEscaped(urls) + " ")
-        } else if board.string(forType: .string) == nil, let image = NSImage(pasteboard: board), let path = Self.save(image) {
-            paste(Self.shellEscaped([URL(fileURLWithPath: path)]) + " ")
-        } else {
-            super.paste(sender)
+        do {
+            if let text = try Self.attachmentText(from: board) {
+                paste(text)
+            } else {
+                super.paste(sender)
+            }
+        } catch {
+            NSSound.beep()
         }
     }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
-        sender.draggingPasteboard.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) ? .copy : []
+        let board = sender.draggingPasteboard
+        let readable = board.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true])
+            || board.canReadObject(forClasses: [NSImage.self, NSFilePromiseReceiver.self], options: nil)
+        return readable && sender.draggingSourceOperationMask.contains(.copy) ? .copy : []
     }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
-        guard let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty else { return false }
-        window?.makeFirstResponder(self)
-        paste(Self.shellEscaped(urls) + " ")
-        return true
+        let board = sender.draggingPasteboard
+        do {
+            // Photos and browsers hand over a promise of the file, not the file itself.
+            if !board.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]),
+               let promises = board.readObjects(forClasses: [NSFilePromiseReceiver.self]) as? [NSFilePromiseReceiver], !promises.isEmpty {
+                window?.makeFirstResponder(self)
+                try receive(promises)
+                return true
+            }
+            guard let text = try Self.attachmentText(from: board, preferText: false) else { return false }
+            window?.makeFirstResponder(self)
+            paste(text)
+            return true
+        } catch {
+            NSSound.beep()
+            return false
+        }
+    }
+
+    /// Pastes each promised file's path as it arrives, in a folder of its own so names can't collide.
+    private func receive(_ promises: [NSFilePromiseReceiver]) throws {
+        let dir = Self.attachmentDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        for promise in promises {
+            promise.receivePromisedFiles(atDestination: dir, options: [:], operationQueue: .main) { [weak self] url, error in
+                if error == nil {
+                    self?.paste(Self.shellEscaped([url]) + " ")
+                } else {
+                    NSSound.beep()
+                }
+            }
+        }
+    }
+
+    /// Preserve ordinary text pastes; file URLs and image-only clipboard contents become paths.
+    static func attachmentText(from board: NSPasteboard, preferText: Bool = true,
+                               directory: URL? = nil) throws -> String? {
+        if let urls = board.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty {
+            return shellEscaped(urls) + " "
+        }
+        if preferText, board.string(forType: .string) != nil { return nil }
+        guard let image = NSImage(pasteboard: board) else { return nil }
+        return shellEscaped([try save(image, directory: directory)]) + " "
     }
 
     /// Paths the way a shell, Claude Code and Codex read them: spaces and specials escaped.
@@ -148,16 +192,21 @@ final class TermView: LocalProcessTerminalView {
         }.joined(separator: " ")
     }
 
+    private static var attachmentDirectory: URL {
+        URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("omux-paste", isDirectory: true)
+    }
+
     /// Saves a pasted image as PNG under the temporary folder, like the browser's picks.
-    private static func save(_ image: NSImage) -> String? {
+    private static func save(_ image: NSImage, directory: URL?) throws -> URL {
         guard let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
-              let png = rep.representation(using: .png, properties: [:]) else { return nil }
-        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("omux-paste", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let stamp = DateFormatter(); stamp.dateFormat = "yyyyMMdd-HHmmss"
-        let url = dir.appendingPathComponent("image-\(stamp.string(from: Date())).png")
-        guard (try? png.write(to: url)) != nil else { return nil }
-        return url.path
+              let png = rep.representation(using: .png, properties: [:]) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        let dir = directory ?? attachmentDirectory
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let url = dir.appendingPathComponent("image-\(UUID().uuidString).png")
+        try png.write(to: url, options: .atomic)
+        return url
     }
 
     /// Types text into the session as a paste, so newlines don't submit it early.
