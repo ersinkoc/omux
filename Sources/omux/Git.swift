@@ -42,9 +42,15 @@ enum Git {
         process.standardError = err
         process.standardInput = FileHandle.nullDevice
         do { try process.run() } catch { return Result(status: -1, out: "", err: error.localizedDescription) }
-        // Read before waiting: a full pipe would otherwise block the child forever.
+        // Read both pipes before waiting, stderr on its own thread: a full pipe would
+        // otherwise block the child forever (a chatty commit hook fills 64 KB fast).
+        var errData = Data()
+        let errRead = DispatchGroup()
+        DispatchQueue.global(qos: .utility).async(group: errRead) {
+            errData = err.fileHandleForReading.readDataToEndOfFile()
+        }
         let outData = out.fileHandleForReading.readDataToEndOfFile()
-        let errData = err.fileHandleForReading.readDataToEndOfFile()
+        errRead.wait()
         process.waitUntilExit()
         return Result(status: process.terminationStatus,
                       out: String(decoding: outData, as: UTF8.self),
@@ -91,7 +97,9 @@ enum Git {
     static func slug(_ text: String) -> String {
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_/."))
         let words = text.lowercased().components(separatedBy: allowed.inverted).filter { !$0.isEmpty }
-        return String(words.joined(separator: "-").prefix(48)).trimmingCharacters(in: CharacterSet(charactersIn: "-./"))
+        // Git rejects "..", "//" and components starting with ".": keep only the first of such a run.
+        let joined = words.joined(separator: "-").replacingOccurrences(of: #"([./])[./]+"#, with: "$1", options: .regularExpression)
+        return String(joined.prefix(48)).trimmingCharacters(in: CharacterSet(charactersIn: "-./"))
     }
 
     // MARK: Worktrees
@@ -236,6 +244,9 @@ enum Git {
                 new = Int(line[n]) ?? 0
                 inHunk = true
                 lines.append(DiffLine(index: lines.count, kind: .hunk, oldNumber: nil, newNumber: nil, text: line))
+            } else if line.hasPrefix("diff ") {
+                // A type change (symlink ↔ file) diffs as two files; skip the second's header.
+                inHunk = false
             } else if line.hasPrefix("Binary files") {
                 lines.append(DiffLine(index: lines.count, kind: .info, oldNumber: nil, newNumber: nil, text: "Binary file changed"))
             } else if !inHunk {
