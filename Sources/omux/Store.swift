@@ -440,11 +440,18 @@ final class Store: ObservableObject {
         return dirs.contains { FileManager.default.fileExists(atPath: "\(projects)/\($0)/\(session).jsonl") }
     }
 
+    /// A project's folder may be typed as "~/app" or "/Users/me/app/"; Finder and agents
+    /// report "/Users/me/app".
+    private static func samePath(_ directory: String?, _ path: String) -> Bool {
+        func normalized(_ p: String) -> String { ((p as NSString).expandingTildeInPath as NSString).standardizingPath }
+        return directory.map(normalized) == normalized(path)
+    }
+
     /// Opens a folder as a new group with one Claude session inside it.
     func openFolder(_ path: String) {
         var isDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: path, isDirectory: &isDir), isDir.boolValue else { return }
-        if let existing = groups.first(where: { $0.directory == path }) {
+        if let existing = groups.first(where: { Self.samePath($0.directory, path) }) {
             newTab(in: existing.id)
             return
         }
@@ -461,7 +468,7 @@ final class Store: ObservableObject {
             return
         }
         let gi: Int
-        if let index = groups.firstIndex(where: { $0.directory == recent.cwd }) {
+        if let index = groups.firstIndex(where: { Self.samePath($0.directory, recent.cwd) }) {
             gi = index
         } else {
             groups.append(TabGroup(name: (recent.cwd as NSString).lastPathComponent, directory: recent.cwd))
@@ -483,7 +490,7 @@ final class Store: ObservableObject {
             return
         }
         let groupID: UUID
-        if let group = groups.first(where: { $0.directory == recent.cwd }) {
+        if let group = groups.first(where: { Self.samePath($0.directory, recent.cwd) }) {
             groupID = group.id
         } else {
             var group = TabGroup(name: (recent.cwd as NSString).lastPathComponent, directory: recent.cwd)
