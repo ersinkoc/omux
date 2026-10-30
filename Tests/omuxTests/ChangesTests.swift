@@ -24,6 +24,14 @@ final class ChangesTests: XCTestCase {
         git(["-c", "user.name=omux", "-c", "user.email=omux@example.com", "commit", "-qam", message], in: dir)
     }
 
+    func testTotalsSkipBinaryFiles() {
+        let files = [ChangedFile(path: "a", added: 3, removed: 1, status: .modified),
+                     ChangedFile(path: "b", added: nil, removed: nil, status: .modified),
+                     ChangedFile(path: "c", added: 2, removed: 0, status: .untracked)]
+        XCTAssertEqual(files.totals, DiffStat(added: 5, removed: 1))
+        XCTAssertTrue([ChangedFile]().totals.isEmpty)
+    }
+
     func testGitDirectoryOfLinkedWorktreeIsOutsideIt() throws {
         let repo = try makeRepo()
         let linked = repo + "-linked"

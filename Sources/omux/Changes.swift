@@ -32,10 +32,6 @@ final class Changes: ObservableObject {
     private var refreshing = false
     private var again = false
 
-    var totals: (added: Int, removed: Int) {
-        files.reduce((0, 0)) { ($0.0 + ($1.added ?? 0), $0.1 + ($1.removed ?? 0)) }
-    }
-
     /// Follows the selected session. Folders outside a repo aren't watched, so a session
     /// in the home folder costs nothing.
     func track(tabID: UUID?, dir: String?, worktree: Worktree?) {
@@ -82,6 +78,7 @@ final class Changes: ObservableObject {
                 if self.dir == dir {
                     self.base = base
                     if self.files != files { self.files = files }
+                    if worktree != nil, let tabID = self.tabID { DiffStatMonitor.shared.update(tabID, files.totals) }
                 }
                 if self.again || self.dir != dir {
                     self.again = false
@@ -121,6 +118,55 @@ final class Changes: ObservableObject {
         }.joined(separator: "\n")
         Store.shared.sendText("Review notes on your changes:\n" + body, to: tabID, submit: true)
         notes[tabID] = []
+    }
+}
+
+/// Lines changed in each worktree session, for the sidebar. The selected session updates
+/// with its Changes panel, the others about once a minute and on coming back to omux.
+@MainActor
+final class DiffStatMonitor: ObservableObject {
+    static let shared = DiffStatMonitor()
+
+    @Published private(set) var stats: [UUID: DiffStat] = [:]
+
+    private let queue = DispatchQueue(label: "omux.diffstats", qos: .utility)
+    private var polling = false
+    private var timer: Timer?
+
+    private init() {
+        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
+            Task { @MainActor in DiffStatMonitor.shared.poll() }
+        }
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
+            Task { @MainActor in DiffStatMonitor.shared.poll() }
+        }
+        DispatchQueue.main.async { self.poll() }
+    }
+
+    func update(_ id: UUID, _ stat: DiffStat) {
+        if stats[id] != stat { stats[id] = stat }
+    }
+
+    func poll() {
+        guard !polling else { return }
+        let store = Store.shared
+        let sessions = store.allTabs.compactMap { entry -> (id: UUID, dir: String, worktree: Worktree)? in
+            guard let worktree = entry.tab.worktree, let dir = store.directory(of: entry.tab),
+                  FileManager.default.fileExists(atPath: dir) else { return nil }
+            return (entry.tab.id, dir, worktree)
+        }
+        polling = true
+        queue.async {
+            var found: [UUID: DiffStat] = [:]
+            for session in sessions {
+                let base = Git.diffBase(dir: session.dir, worktree: session.worktree)
+                found[session.id] = Git.changedFiles(dir: session.dir, base: base).totals
+            }
+            DispatchQueue.main.async {
+                self.polling = false
+                if found != self.stats { self.stats = found }
+            }
+        }
     }
 }
 

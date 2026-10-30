@@ -325,7 +325,7 @@ struct BranchChip: View {
                 Image(systemName: "arrow.triangle.branch")
                 Text(worktree.branch).lineLimit(1)
                 if changes.tabID == tabID, !changes.files.isEmpty {
-                    let totals = changes.totals
+                    let totals = changes.files.totals
                     Text("+\(totals.added)").foregroundStyle(.green)
                     Text("−\(totals.removed)").foregroundStyle(.red)
                 }

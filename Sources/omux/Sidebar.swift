@@ -99,6 +99,7 @@ struct TabRow: View {
     @EnvironmentObject var store: Store
     @ObservedObject private var monitor = AgentMonitor.shared
     @ObservedObject private var pulls = PullRequestMonitor.shared
+    @ObservedObject private var diffStats = DiffStatMonitor.shared
     let tab: TabItem
     @State private var hovering = false
     @AppStorage(Prefs.showFolderPath) private var showFolderPath = true
@@ -129,6 +130,9 @@ struct TabRow: View {
                         Image(systemName: "arrow.triangle.branch").imageScale(.small)
                         Text(([worktree.branch, rt.statusLine(showFolder: false), agentCount].compactMap { $0 })
                             .joined(separator: " · "))
+                        if let stat = diffStats.stats[tab.id], !stat.isEmpty {
+                            Stat(added: stat.added, removed: stat.removed).layoutPriority(1)
+                        }
                         if let pr = pulls.requests[tab.id] {
                             PullRequestBadge(pr: pr).layoutPriority(1)
                         }

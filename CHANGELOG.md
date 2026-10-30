@@ -2,6 +2,21 @@
 
 All notable changes to omux are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+
+- **Line counts in the sidebar.** Worktree sessions show their added and removed lines next to the branch. The selected session updates as its files change, the others about once a minute and when you come back to omux.
+- **Terminal font size from the keyboard.** ⌘+ (or ⌘=), ⌘− and ⌘0 in the View menu.
+
+### Changed
+
+- Errors and results of Git actions appear in a banner over the terminal instead of an alert, so they no longer stop what you're doing. Errors stay until dismissed and their text can be selected; results go away on their own. Questions that need an answer are still alerts.
+
+### Fixed
+
+- The Changes tab missed commits and resets in worktree sessions and in sessions in a subfolder of a repository, because Git's files are outside the session's folder there. It also now notices when `git init` runs in a session's folder.
+
 ## [0.6.1] - 2026-10-30
 
 ### Added
