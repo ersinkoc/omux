@@ -256,7 +256,7 @@ final class Store: ObservableObject {
                 self.save()
                 self.update(tab.id) { $0.agentConnected = true; $0.busy = false }
                 let setup = self.codexSetup.removeValue(forKey: tab.id)
-                view.send(txt: [setup, launch.command].compactMap { $0 }.joined(separator: " && ") + "\n")
+                view.send(txt: (setup.map { Self.afterSetup($0, launch.command) } ?? launch.command) + "\n")
             } catch {
                 guard !Task.isCancelled, let self, let view, self.terminals[tab.id] === view else { return }
                 self.update(tab.id) { $0.busy = false; $0.statusState = .error; $0.statusDetail = error.localizedDescription }
@@ -638,11 +638,22 @@ final class Store: ObservableObject {
                 // Codex starts after its app-server connects; the setup runs in front of it then.
                 codexSetup[tab.id] = setup
             } else {
-                command = [setup, startupCommand(tab: tab, group: groups[gi])].compactMap { $0 }.joined(separator: " && ")
+                command = Self.afterSetup(setup, startupCommand(tab: tab, group: groups[gi]))
             }
         }
         makeTerminal(tab: tab, group: groups[gi], command: command)
         selectedTabID = tab.id
+    }
+
+    /// `command` after `setup`, only if it succeeds. A trailing ";" or "&" can't stand in
+    /// front of "&&", and "&" already ends the setup by putting it in the background.
+    nonisolated static func afterSetup(_ setup: String, _ command: String?) -> String {
+        var setup = setup.trimmingCharacters(in: .whitespacesAndNewlines)
+        // An escaped "\;" (find -exec) is an argument, not a separator.
+        while setup.hasSuffix(";"), !setup.hasSuffix("\\;") { setup = String(setup.dropLast()).trimmingCharacters(in: .whitespaces) }
+        guard let command else { return setup }
+        let background = setup.hasSuffix("&") && !setup.hasSuffix("&&") && !setup.hasSuffix("\\&")
+        return setup + (background ? " " : " && ") + command
     }
 
     func closeTab(_ id: UUID) {
