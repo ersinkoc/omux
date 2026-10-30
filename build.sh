@@ -66,6 +66,7 @@ if [[ "$MODE" == "install" ]]; then
   cp -R "$APP" "/Applications/$NAME.app"
   /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "/Applications/$NAME.app"
   /System/Library/CoreServices/pbs -flush 2>/dev/null || true
+  /System/Library/CoreServices/pbs -update 2>/dev/null || true
   echo "Built and installed /Applications/$NAME.app ($(du -sh "$APP" | cut -f1))"
   exit 0
 fi

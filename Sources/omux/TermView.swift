@@ -67,6 +67,10 @@ final class TermView: LocalProcessTerminalView {
                    options: TerminalOptions(scrollback: 5000))
         events.owner = self
         processDelegate = events
+        // Option composes the layout's character (⌥Q is "@" on a Turkish layout) and
+        // stays Meta only on keys with no character: arrows, ⌥⏎, ⌥⌫, Escape, Tab.
+        optionAsMetaKey = false
+        optionAsMetaKeyForFunctionalKeys = true
         apply(Theme.current)
         registerForDraggedTypes([.fileURL, .png, .tiff] + NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) })
         // Observed, not handled, so SwiftTerm keeps drawing OSC 9;4 progress itself.
