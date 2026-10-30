@@ -88,6 +88,9 @@ struct TabGroup: Identifiable, Codable, Hashable {
     var isCollapsed = false
     /// New sessions get their own git worktree.
     var useWorktrees = false
+    /// Runs in each new worktree before the session's command, e.g. to copy ignored
+    /// files like `.env` or install dependencies. Empty runs nothing.
+    var worktreeSetup = ""
     var tabs: [TabItem] = []
 
     init(name: String, directory: String? = nil, tabs: [TabItem] = []) {
@@ -105,6 +108,7 @@ struct TabGroup: Identifiable, Codable, Hashable {
         provider = try c.decodeIfPresent(SessionProvider.self, forKey: .provider) ?? SessionProvider.infer(command: command)
         isCollapsed = try c.decodeIfPresent(Bool.self, forKey: .isCollapsed) ?? false
         useWorktrees = try c.decodeIfPresent(Bool.self, forKey: .useWorktrees) ?? false
+        worktreeSetup = try c.decodeIfPresent(String.self, forKey: .worktreeSetup) ?? ""
         tabs = try c.decodeIfPresent([TabItem].self, forKey: .tabs) ?? []
     }
 }

@@ -193,6 +193,7 @@ struct GroupEditSheet: View {
     @State private var command = ""
     @State private var provider = SessionProvider.claude
     @State private var useWorktrees = false
+    @State private var worktreeSetup = ""
 
     var body: some View {
         Form {
@@ -210,6 +211,11 @@ struct GroupEditSheet: View {
             Text("Applies when a session starts. Existing sessions keep running.")
                 .font(.caption).foregroundStyle(.secondary)
             Toggle("Give new sessions their own Git worktree", isOn: $useWorktrees)
+            TextField("Worktree setup", text: $worktreeSetup, prompt: Text("cp \"$OMUX_REPO/.env\" . && npm install"))
+                .font(.system(.body, design: .monospaced))
+            Text(WorktreeSetupHint.text)
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
@@ -225,6 +231,7 @@ struct GroupEditSheet: View {
             command = group.command ?? ""
             provider = command == group.provider.command ? group.provider : .custom
             useWorktrees = group.useWorktrees
+            worktreeSetup = group.worktreeSetup
         }
     }
 
@@ -235,6 +242,7 @@ struct GroupEditSheet: View {
             group.command = provider == .custom ? command : provider.command
             group.provider = provider == .custom ? SessionProvider.infer(command: command) : provider
             group.useWorktrees = useWorktrees
+            group.worktreeSetup = worktreeSetup.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         dismiss()
     }

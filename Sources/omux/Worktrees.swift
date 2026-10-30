@@ -28,7 +28,8 @@ extension Store {
                 var tab = TabItem(name: name, directory: path, worktree: Worktree(branch: branch, base: base, repo: repo))
                 tab.provider = provider
                 tab.command = provider?.command
-                self.addSession(tab, to: groupID)
+                let setup = self.groups.first { $0.id == groupID }?.worktreeSetup
+                self.addSession(tab, to: groupID, setup: setup)
                 completion(nil)
             }
         }
@@ -252,6 +253,16 @@ struct WorktreeSheet: View {
                         }
                     }
                 }
+                VStack(alignment: .leading, spacing: 4) {
+                    TextField("Setup", text: Binding(
+                        get: { group?.worktreeSetup ?? "" },
+                        set: { value in store.updateGroup(groupID) { $0.worktreeSetup = value } }
+                    ), prompt: Text("cp \"$OMUX_REPO/.env\" . && npm install"))
+                    .font(.system(.body, design: .monospaced))
+                    Text(WorktreeSetupHint.text)
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Toggle("Use worktrees for new sessions in \(group?.name ?? "this project")", isOn: Binding(
                     get: { group?.useWorktrees ?? false },
                     set: { value in store.updateGroup(groupID) { $0.useWorktrees = value } }
@@ -301,6 +312,11 @@ struct WorktreeSheet: View {
             if let message { error = message } else { dismiss() }
         }
     }
+}
+
+enum WorktreeSetupHint {
+    static let text = "Runs in each new worktree before the session starts, and only starts it if setup succeeds. "
+        + "$OMUX_REPO is the main checkout, for copying files Git ignores. Saved with the project."
 }
 
 /// Shown in the header strip of a worktree session; opens the Changes tab.

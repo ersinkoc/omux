@@ -51,6 +51,8 @@ final class Store: ObservableObject {
 
     private var terminals: [UUID: TermView] = [:]
     private var codexStarts: [UUID: Task<Void, Never>] = [:]
+    /// A worktree setup command to run before a new Codex session's TUI starts.
+    private var codexSetup: [UUID: String] = [:]
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
@@ -205,6 +207,8 @@ final class Store: ObservableObject {
         if provider == .codex {
             env["OMUX_CODEX_TOKEN"] = CodexManager.shared.connection(for: tab.id).token
         }
+        // Lets a worktree's setup reach the main checkout, e.g. `cp "$OMUX_REPO/.env" .`.
+        if let worktree = tab.worktree { env["OMUX_REPO"] = worktree.repo }
 
         view.startProcess(
             executable: shell,
@@ -242,7 +246,8 @@ final class Store: ObservableObject {
                 self.updateTab(tab.id) { $0.codexThreadID = launch.threadID }
                 self.save()
                 self.update(tab.id) { $0.agentConnected = true; $0.busy = false }
-                view.send(txt: launch.command + "\n")
+                let setup = self.codexSetup.removeValue(forKey: tab.id)
+                view.send(txt: [setup, launch.command].compactMap { $0 }.joined(separator: " && ") + "\n")
             } catch {
                 guard !Task.isCancelled, let self, let view, self.terminals[tab.id] === view else { return }
                 self.update(tab.id) { $0.busy = false; $0.statusState = .error; $0.statusDetail = error.localizedDescription }
@@ -600,12 +605,22 @@ final class Store: ObservableObject {
         selectedTabID = tab.id
     }
 
-    /// Adds a ready-made session to a project and starts it.
-    func addSession(_ tab: TabItem, to groupID: UUID) {
+    /// Adds a ready-made session to a project and starts it. `setup` runs once before the
+    /// session's command, which only starts if it succeeds.
+    func addSession(_ tab: TabItem, to groupID: UUID, setup: String? = nil) {
         guard let gi = groups.firstIndex(where: { $0.id == groupID }) else { return }
         groups[gi].tabs.append(tab)
         groups[gi].isCollapsed = false
-        makeTerminal(tab: tab, group: groups[gi])
+        var command: String?
+        if let setup = setup?.trimmingCharacters(in: .whitespacesAndNewlines), !setup.isEmpty {
+            if tab.resolvedProvider(in: groups[gi]) == .codex {
+                // Codex starts after its app-server connects; the setup runs in front of it then.
+                codexSetup[tab.id] = setup
+            } else {
+                command = [setup, startupCommand(tab: tab, group: groups[gi])].compactMap { $0 }.joined(separator: " && ")
+            }
+        }
+        makeTerminal(tab: tab, group: groups[gi], command: command)
         selectedTabID = tab.id
     }
 
