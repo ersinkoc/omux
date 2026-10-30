@@ -189,9 +189,11 @@ enum Git {
     /// Changed and untracked files, compared with `base` (working tree included).
     static func changedFiles(dir: String, base: String?) -> [ChangedFile] {
         var files: [ChangedFile] = []
-        if let base {
-            let numstat = run(["diff", "--numstat", "-z", "--no-renames", base], in: dir).out
-            let status = run(["diff", "--name-status", "-z", "--no-renames", base], in: dir).out
+        // Before the first commit, staged files are measured against the empty tree.
+        if let base = base ?? emptyTree(dir) {
+            // --relative: paths from `dir`, as ls-files and the diff below take them.
+            let numstat = run(["diff", "--numstat", "-z", "--no-renames", "--relative", base], in: dir).out
+            let status = run(["diff", "--name-status", "-z", "--no-renames", "--relative", base], in: dir).out
             var kinds: [String: ChangedFile.Status] = [:]
             let parts = status.split(separator: "\0", omittingEmptySubsequences: false).map(String.init)
             var i = 0
@@ -215,9 +217,15 @@ enum Git {
         return files.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
     }
 
+    private static func emptyTree(_ dir: String) -> String? {
+        let r = run(["hash-object", "-t", "tree", "/dev/null"], in: dir)
+        return r.ok ? r.out.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+    }
+
     /// The lines of a small text file, or nil for binaries and big files.
     static func textLines(atPath path: String) -> [String]? {
-        guard let attrs = try? FileManager.default.attributesOfItem(atPath: path),
+        // Sized through symlinks, since contents(atPath:) follows them.
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: (path as NSString).resolvingSymlinksInPath),
               (attrs[.size] as? Int ?? .max) < 1_000_000,
               let data = FileManager.default.contents(atPath: path),
               !data.prefix(8000).contains(0),
@@ -235,7 +243,8 @@ enum Git {
             return [DiffLine(index: 0, kind: .hunk, oldNumber: nil, newNumber: nil, text: "New file")] +
                 lines.prefix(3000).enumerated().map { DiffLine(index: $0.offset + 1, kind: .added, oldNumber: nil, newNumber: $0.offset + 1, text: $0.element) }
         }
-        let out = run(["diff", "--no-color", "--no-ext-diff", "--no-renames", base!, "--", file.path], in: dir).out
+        // Literal, so a name like "a*" or ":x" isn't read as a pattern.
+        let out = run(["--literal-pathspecs", "diff", "--no-color", "--no-ext-diff", "--no-renames", base!, "--", file.path], in: dir).out
         return parseDiff(out)
     }
 

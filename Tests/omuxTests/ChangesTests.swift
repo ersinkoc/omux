@@ -88,6 +88,49 @@ final class ChangesTests: XCTestCase {
         try await waitUntil { changes.isRepo }
     }
 
+    func testSubfolderPathsAreFromTheSessionFolder() throws {
+        let repo = try makeRepo()
+        let dir = repo + "/sub"
+        try "one\ntwo\n".write(toFile: dir + "/file.txt", atomically: true, encoding: .utf8)
+        try "new\n".write(toFile: dir + "/new.txt", atomically: true, encoding: .utf8)
+        let files = Git.changedFiles(dir: dir, base: "HEAD")
+        XCTAssertEqual(files.map(\.path), ["file.txt", "new.txt"])
+        let diff = Git.diff(dir: dir, base: "HEAD", file: files[0])
+        XCTAssertEqual(diff.filter { $0.kind == .added }.map(\.text), ["two"])
+    }
+
+    func testNamesAreNotPathspecPatterns() throws {
+        let repo = try makeRepo()
+        for name in ["a*", "abc", ":colon"] { try "x\n".write(toFile: repo + "/" + name, atomically: true, encoding: .utf8) }
+        git(["add", "."], in: repo)
+        commit("names", in: repo)
+        for name in ["a*", "abc", ":colon"] { try "x\ny\n".write(toFile: repo + "/" + name, atomically: true, encoding: .utf8) }
+        for file in Git.changedFiles(dir: repo, base: "HEAD") {
+            XCTAssertEqual(Git.diff(dir: repo, base: "HEAD", file: file).filter { $0.kind == .added }.map(\.text), ["y"], file.path)
+        }
+    }
+
+    func testStagedFilesShowBeforeTheFirstCommit() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).path
+        try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(atPath: dir) }
+        git(["init", "-q"], in: dir)
+        try "hi\n".write(toFile: dir + "/staged.txt", atomically: true, encoding: .utf8)
+        git(["add", "staged.txt"], in: dir)
+        let files = Git.changedFiles(dir: dir, base: Git.diffBase(dir: dir, worktree: nil))
+        XCTAssertEqual(files.map(\.path), ["staged.txt"])
+        XCTAssertEqual(files.first?.status, .added)
+    }
+
+    func testSymlinkToABigFileCountsAsBig() throws {
+        let repo = try makeRepo()
+        let big = repo + "-big"
+        addTeardownBlock { try? FileManager.default.removeItem(atPath: big) }
+        try String(repeating: "line\n", count: 400_000).write(toFile: big, atomically: true, encoding: .utf8)
+        try FileManager.default.createSymbolicLink(atPath: repo + "/link", withDestinationPath: big)
+        XCTAssertNil(Git.textLines(atPath: repo + "/link"))
+    }
+
     @MainActor
     private func waitUntil(timeout: Duration = .seconds(10), _ condition: () -> Bool) async throws {
         let end = ContinuousClock.now + timeout
