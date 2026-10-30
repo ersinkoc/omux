@@ -17,7 +17,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Which is more mature?", "acceptedAnswer": {"@type": "Answer", "text": "cmux has a broader feature set and a larger community. omux is newer and focused; check both changelogs and pick the one whose direction matches how you work."}}, {"@type": "Question", "name": "Can omux read Ghostty themes?", "acceptedAnswer": {"@type": "Answer", "text": "No. omux has its own themes and font settings. cmux reads your Ghostty configuration."}}, {"@type": "Question", "name": "Does omux have a CLI?", "acceptedAnswer": {"@type": "Answer", "text": "Not beyond open -a omux <folder>. If you need to script your terminal, cmux is the better fit today."}}]}</script>
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "omux", "item": "https://omux.app/"}, {"@type": "ListItem", "position": 2, "name": "omux vs cmux", "item": "https://omux.app/cmux-alternative"}]}</script>
 </head>
@@ -50,6 +50,24 @@
       <a class="btn btn-secondary" href="https://github.com/manaflow-ai/cmux" rel="nofollow noopener">About cmux</a>
     </div>
 
+<div class="glance" role="table" aria-label="At a glance">
+      <div class="glance-row glance-head" role="row"><span class="glance-label">At a glance</span><span>omux</span><span>cmux</span></div>
+<div class="glance-row"><span class="glance-label">Native macOS app</span><span class="mark yes" aria-label="yes">✓</span><span class="mark yes" aria-label="yes">✓</span></div>
+<div class="glance-row"><span class="glance-label">Status from the agents' own protocols</span><span class="mark yes" aria-label="yes">✓</span><span class="mark no" aria-label="no">✕</span></div>
+<div class="glance-row"><span class="glance-label">Allow/Deny buttons</span><span class="mark yes" aria-label="yes">✓</span><span class="mark no" aria-label="no">✕</span></div>
+<div class="glance-row"><span class="glance-label">Subagent transcripts</span><span class="mark yes" aria-label="yes">✓</span><span class="mark partial" aria-label="partly">~</span></div>
+<div class="glance-row"><span class="glance-label">Worktrees with PR merge and cleanup</span><span class="mark yes" aria-label="yes">✓</span><span class="mark partial" aria-label="partly">~</span></div>
+<div class="glance-row"><span class="glance-label">Split panes</span><span class="mark no" aria-label="no">✕</span><span class="mark yes" aria-label="yes">✓</span></div>
+<div class="glance-row"><span class="glance-label">SSH workspaces</span><span class="mark no" aria-label="no">✕</span><span class="mark yes" aria-label="yes">✓</span></div>
+<div class="glance-row"><span class="glance-label">CLI and socket API</span><span class="mark no" aria-label="no">✕</span><span class="mark yes" aria-label="yes">✓</span></div>
+<div class="glance-row"><span class="glance-label">Free and open source</span><span class="mark yes" aria-label="yes">✓</span><span class="mark yes" aria-label="yes">✓</span></div>
+    </div>
+
+    <figure class="shot compare-shot">
+      <img src="screenshot.png" srcset="screenshot.png 1600w, screenshot@2x.png 2400w" sizes="(min-width: 800px) 760px, calc(100vw - 32px)" width="1600" height="987" loading="lazy" alt="omux with eight projects in the sidebar, a session running five subagents, a session waiting on Allow or Deny, two Codex sessions, and the Changes tab showing the diff">
+      <figcaption>omux: projects and sessions on the left, the agent in the middle, its diff on the right. The session that needs you shows Allow and Deny.</figcaption>
+    </figure>
+
     <h2>Side by side</h2>
     <div class="table-wrap">
     <table class="compare-table">
@@ -64,10 +82,10 @@
 <tr><th scope="row">Conversations after a restart</th><td>Each session resumes its exact Claude or Codex conversation</td><td>Layout, directories and saved session ids restored; supported agents resume</td></tr>
 <tr><th scope="row">Pull requests</th><td>PR status per worktree session, create, merge, clean up</td><td>PR status shown in the sidebar</td></tr>
 <tr><th scope="row">Side panels</th><td>Files, Changes (diff with review notes sent to the agent) and Browser</td><td>In-app browser with a scriptable automation API</td></tr>
-<tr><th scope="row">Usage limits</th><td>Claude and Codex plan limits in the sidebar</td><td>No</td></tr>
-<tr><th scope="row">Split panes</th><td>No</td><td>Yes, right and down</td></tr>
-<tr><th scope="row">Remote machines over SSH</th><td>No</td><td>Yes, cmux ssh</td></tr>
-<tr><th scope="row">Scripting</th><td>No</td><td>CLI and Unix socket API</td></tr>
+<tr><th scope="row">Usage limits</th><td>Claude and Codex plan limits in the sidebar</td><td><span class="mark no" aria-label="no">✕</span></td></tr>
+<tr><th scope="row">Split panes</th><td><span class="mark no" aria-label="no">✕</span></td><td><span class="mark yes" aria-label="yes">✓</span> right and down</td></tr>
+<tr><th scope="row">Remote machines over SSH</th><td><span class="mark no" aria-label="no">✕</span></td><td><span class="mark yes" aria-label="yes">✓</span> cmux ssh</td></tr>
+<tr><th scope="row">Scripting</th><td><span class="mark no" aria-label="no">✕</span></td><td>CLI and Unix socket API</td></tr>
 <tr><th scope="row">Updates</th><td>In-app, signed, notarized</td><td>In-app via Sparkle, DMG and Homebrew</td></tr>
 <tr><th scope="row">License</th><td>MIT</td><td>GPL-3.0 for the app</td></tr>
       </tbody>
@@ -75,12 +93,12 @@
     </div>
 
     <div class="split">
-      <div class="card">
-        <h2>Pick cmux if</h2>
+      <div class="card pick pick-other">
+        <h2><span class="pick-icon" aria-hidden="true">→</span> Pick cmux if</h2>
         <ul><li>You want split panes, SSH workspaces, or a terminal you can script from the outside.</li><li>You already use Ghostty and want its rendering and config.</li><li>You run agents beyond Claude Code and Codex and want them all treated the same way.</li></ul>
       </div>
-      <div class="card">
-        <h2>Pick omux if</h2>
+      <div class="card pick pick-omux">
+        <h2><span class="pick-icon" aria-hidden="true">★</span> Pick omux if</h2>
         <ul><li>Your sessions are Claude Code and Codex, and you want status, permissions and subagents read from the agents themselves rather than from notifications.</li><li>You want a worktree per session with the pull request's state, the diff and review notes right there.</li><li>You like a smaller, MIT-licensed app with no scripting surface to think about.</li></ul>
       </div>
     </div>

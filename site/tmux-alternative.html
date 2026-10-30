@@ -17,7 +17,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Can I use omux and tmux together?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. A plain shell session in omux is a normal login shell, so you can run tmux inside it. omux's agent-aware features apply to sessions that run Claude Code or Codex directly."}}, {"@type": "Question", "name": "Does omux replace tmux for remote work?", "acceptedAnswer": {"@type": "Answer", "text": "No. omux runs sessions on your Mac only. For agents on remote machines, tmux or a tool like herdr is the better fit."}}, {"@type": "Question", "name": "Does omux need Claude Code or Codex to be installed?", "acceptedAnswer": {"@type": "Answer", "text": "For agent sessions, yes: Claude Code as claude, and optionally the Codex CLI as codex. Plain shell sessions work without either."}}]}</script>
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "omux", "item": "https://omux.app/"}, {"@type": "ListItem", "position": 2, "name": "omux vs tmux", "item": "https://omux.app/tmux-alternative"}]}</script>
 </head>
@@ -50,6 +50,23 @@
       <a class="btn btn-secondary" href="https://github.com/tmux/tmux" rel="nofollow noopener">About tmux</a>
     </div>
 
+<div class="glance" role="table" aria-label="At a glance">
+      <div class="glance-row glance-head" role="row"><span class="glance-label">At a glance</span><span>omux</span><span>tmux</span></div>
+<div class="glance-row"><span class="glance-label">Native macOS app</span><span class="mark yes" aria-label="yes">✓</span><span class="mark no" aria-label="no">✕</span></div>
+<div class="glance-row"><span class="glance-label">Runs on Linux and over SSH</span><span class="mark no" aria-label="no">✕</span><span class="mark yes" aria-label="yes">✓</span></div>
+<div class="glance-row"><span class="glance-label">Agent status and Allow/Deny</span><span class="mark yes" aria-label="yes">✓</span><span class="mark no" aria-label="no">✕</span></div>
+<div class="glance-row"><span class="glance-label">Resumes agent conversations</span><span class="mark yes" aria-label="yes">✓</span><span class="mark partial" aria-label="partly">~</span></div>
+<div class="glance-row"><span class="glance-label">Worktrees and pull requests</span><span class="mark yes" aria-label="yes">✓</span><span class="mark no" aria-label="no">✕</span></div>
+<div class="glance-row"><span class="glance-label">Split panes</span><span class="mark no" aria-label="no">✕</span><span class="mark yes" aria-label="yes">✓</span></div>
+<div class="glance-row"><span class="glance-label">Detach and reattach</span><span class="mark no" aria-label="no">✕</span><span class="mark yes" aria-label="yes">✓</span></div>
+<div class="glance-row"><span class="glance-label">Free and open source</span><span class="mark yes" aria-label="yes">✓</span><span class="mark yes" aria-label="yes">✓</span></div>
+    </div>
+
+    <figure class="shot compare-shot">
+      <img src="screenshot.png" srcset="screenshot.png 1600w, screenshot@2x.png 2400w" sizes="(min-width: 800px) 760px, calc(100vw - 32px)" width="1600" height="987" loading="lazy" alt="omux with eight projects in the sidebar, a session running five subagents, a session waiting on Allow or Deny, two Codex sessions, and the Changes tab showing the diff">
+      <figcaption>omux: projects and sessions on the left, the agent in the middle, its diff on the right. The session that needs you shows Allow and Deny.</figcaption>
+    </figure>
+
     <h2>Side by side</h2>
     <div class="table-wrap">
     <table class="compare-table">
@@ -57,28 +74,28 @@
       <tbody>
 <tr><th scope="row">Runs on</th><td>macOS only</td><td>macOS, Linux, BSD, anywhere with a terminal</td></tr>
 <tr><th scope="row">Interface</th><td>Native macOS window with a sidebar and panels</td><td>Keyboard-driven, inside any terminal</td></tr>
-<tr><th scope="row">Knows what the agent is doing</th><td>Yes: status from Claude Code's and Codex's own signals, no screen scraping</td><td>No: a pane is a pane</td></tr>
+<tr><th scope="row">Knows what the agent is doing</th><td><span class="mark yes" aria-label="yes">✓</span> status from Claude Code's and Codex's own signals, no screen scraping</td><td><span class="mark no" aria-label="no">✕</span> a pane is a pane</td></tr>
 <tr><th scope="row">Answer a permission prompt</th><td>Allow and Deny buttons under the session, without switching to it</td><td>Switch to the pane and type</td></tr>
 <tr><th scope="row">Subagents</th><td>Listed under the session, transcripts in the side panel</td><td>Not visible unless the agent prints them</td></tr>
 <tr><th scope="row">Conversations after a restart</th><td>Each session resumes its exact Claude or Codex conversation</td><td>Sessions are gone when the server stops, unless you add a resurrect plugin and resume by hand</td></tr>
 <tr><th scope="row">Git worktrees and pull requests</th><td>One worktree per session, PR status in the sidebar, merge and clean up</td><td>Manual</td></tr>
 <tr><th scope="row">Diff, files and browser next to the agent</th><td>Built-in panels</td><td>Other tools in other panes</td></tr>
-<tr><th scope="row">Split panes</th><td>No</td><td>Yes, any layout</td></tr>
-<tr><th scope="row">Detach and reattach</th><td>No: sessions live as long as the app runs</td><td>Yes, the server keeps running</td></tr>
-<tr><th scope="row">Remote machines over SSH</th><td>No</td><td>Yes, tmux runs on the remote end</td></tr>
-<tr><th scope="row">Scripting</th><td>No</td><td>Full CLI, scriptable</td></tr>
+<tr><th scope="row">Split panes</th><td><span class="mark no" aria-label="no">✕</span></td><td><span class="mark yes" aria-label="yes">✓</span> any layout</td></tr>
+<tr><th scope="row">Detach and reattach</th><td><span class="mark no" aria-label="no">✕</span> sessions live as long as the app runs</td><td><span class="mark yes" aria-label="yes">✓</span> the server keeps running</td></tr>
+<tr><th scope="row">Remote machines over SSH</th><td><span class="mark no" aria-label="no">✕</span></td><td><span class="mark yes" aria-label="yes">✓</span> tmux runs on the remote end</td></tr>
+<tr><th scope="row">Scripting</th><td><span class="mark no" aria-label="no">✕</span></td><td>Full CLI, scriptable</td></tr>
 <tr><th scope="row">Price and license</th><td>Free, MIT</td><td>Free, ISC</td></tr>
       </tbody>
     </table>
     </div>
 
     <div class="split">
-      <div class="card">
-        <h2>Pick tmux if</h2>
+      <div class="card pick pick-other">
+        <h2><span class="pick-icon" aria-hidden="true">→</span> Pick tmux if</h2>
         <ul><li>You work on Linux, over SSH, or on a remote box: tmux runs where the shell runs.</li><li>You rely on detach and reattach, or on custom pane layouts and keybindings.</li><li>You script your sessions, or drive them from other tools.</li></ul>
       </div>
-      <div class="card">
-        <h2>Pick omux if</h2>
+      <div class="card pick pick-omux">
+        <h2><span class="pick-icon" aria-hidden="true">★</span> Pick omux if</h2>
         <ul><li>You run several Claude Code or Codex sessions on a Mac and want to see at a glance which one needs you.</li><li>You'd rather click Allow than hunt for the pane that's asking.</li><li>You want each session's conversation back after a restart, its own worktree, and the diff and files beside it, without setting any of that up.</li></ul>
       </div>
     </div>

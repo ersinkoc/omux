@@ -17,7 +17,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Does omux include an AI agent?", "acceptedAnswer": {"@type": "Answer", "text": "No. It runs Claude Code and Codex, which you install and sign in to yourself. omux never sees your prompts or your API keys."}}, {"@type": "Question", "name": "Can omux run agents in the cloud?", "acceptedAnswer": {"@type": "Answer", "text": "No. Sessions run on your Mac. For cloud or scheduled agents, Warp and similar platforms are built for that."}}, {"@type": "Question", "name": "Is omux really free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. It's MIT-licensed and the app has no paid tier. Your only cost is the Claude or Codex plan you use with it."}}]}</script>
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "omux", "item": "https://omux.app/"}, {"@type": "ListItem", "position": 2, "name": "omux vs Warp", "item": "https://omux.app/warp-alternative"}]}</script>
 </head>
@@ -50,6 +50,23 @@
       <a class="btn btn-secondary" href="https://www.warp.dev" rel="nofollow noopener">About Warp</a>
     </div>
 
+<div class="glance" role="table" aria-label="At a glance">
+      <div class="glance-row glance-head" role="row"><span class="glance-label">At a glance</span><span>omux</span><span>Warp</span></div>
+<div class="glance-row"><span class="glance-label">No account or credits</span><span class="mark yes" aria-label="yes">✓</span><span class="mark no" aria-label="no">✕</span></div>
+<div class="glance-row"><span class="glance-label">Runs your own Claude Code and Codex</span><span class="mark yes" aria-label="yes">✓</span><span class="mark yes" aria-label="yes">✓</span></div>
+<div class="glance-row"><span class="glance-label">Agent status and Allow/Deny</span><span class="mark yes" aria-label="yes">✓</span><span class="mark partial" aria-label="partly">~</span></div>
+<div class="glance-row"><span class="glance-label">Worktrees and pull requests</span><span class="mark yes" aria-label="yes">✓</span><span class="mark no" aria-label="no">✕</span></div>
+<div class="glance-row"><span class="glance-label">Cloud and scheduled agents</span><span class="mark no" aria-label="no">✕</span><span class="mark yes" aria-label="yes">✓</span></div>
+<div class="glance-row"><span class="glance-label">Cross-platform</span><span class="mark no" aria-label="no">✕</span><span class="mark yes" aria-label="yes">✓</span></div>
+<div class="glance-row"><span class="glance-label">No telemetry</span><span class="mark yes" aria-label="yes">✓</span><span class="mark no" aria-label="no">✕</span></div>
+<div class="glance-row"><span class="glance-label">Free and open source</span><span class="mark yes" aria-label="yes">✓</span><span class="mark partial" aria-label="partly">~</span></div>
+    </div>
+
+    <figure class="shot compare-shot">
+      <img src="screenshot.png" srcset="screenshot.png 1600w, screenshot@2x.png 2400w" sizes="(min-width: 800px) 760px, calc(100vw - 32px)" width="1600" height="987" loading="lazy" alt="omux with eight projects in the sidebar, a session running five subagents, a session waiting on Allow or Deny, two Codex sessions, and the Changes tab showing the diff">
+      <figcaption>omux: projects and sessions on the left, the agent in the middle, its diff on the right. The session that needs you shows Allow and Deny.</figcaption>
+    </figure>
+
     <h2>Side by side</h2>
     <div class="table-wrap">
     <table class="compare-table">
@@ -57,26 +74,26 @@
       <tbody>
 <tr><th scope="row">What it is</th><td>A session manager for Claude Code and Codex</td><td>A terminal plus an agent platform with its own agent and cloud runs</td></tr>
 <tr><th scope="row">Runs on</th><td>macOS</td><td>macOS, Linux, Windows</td></tr>
-<tr><th scope="row">Account required</th><td>No</td><td>Sign-in for AI features</td></tr>
+<tr><th scope="row">Account required</th><td><span class="mark no" aria-label="no">✕</span></td><td>Sign-in for AI features</td></tr>
 <tr><th scope="row">Pricing</th><td>Free, MIT; you pay only your Claude or Codex plan</td><td>Usage-based, priced per agent run; free tier with limits</td></tr>
 <tr><th scope="row">Whose agent</th><td>Yours: Claude Code and Codex as installed, with their own logins</td><td>Warp's agent, plus bring-your-own agents such as Claude Code and Codex</td></tr>
 <tr><th scope="row">Agent status and permissions</th><td>Working, needs you, done; Allow and Deny from the sidebar; subagents listed</td><td>Agent UI inside Warp; third-party CLI agents run as programs in the terminal</td></tr>
 <tr><th scope="row">Conversations after a restart</th><td>Each session resumes its exact conversation</td><td>Warp's own agent sessions persist; CLI agents depend on the agent</td></tr>
 <tr><th scope="row">Git worktrees and pull requests</th><td>One worktree per session, PR status, merge and clean up</td><td>Not a worktree manager</td></tr>
-<tr><th scope="row">Cloud and background agents</th><td>No</td><td>Yes: cloud runs, triggers from Slack, Linear and GitHub, factories</td></tr>
-<tr><th scope="row">Telemetry</th><td>None</td><td>Yes, with settings</td></tr>
+<tr><th scope="row">Cloud and background agents</th><td><span class="mark no" aria-label="no">✕</span></td><td><span class="mark yes" aria-label="yes">✓</span> cloud runs, triggers from Slack, Linear and GitHub, factories</td></tr>
+<tr><th scope="row">Telemetry</th><td>None</td><td><span class="mark yes" aria-label="yes">✓</span> with settings</td></tr>
 <tr><th scope="row">Terminal features</th><td>Basic: one terminal per session</td><td>Rich: blocks, completions, command search, split panes</td></tr>
       </tbody>
     </table>
     </div>
 
     <div class="split">
-      <div class="card">
-        <h2>Pick Warp if</h2>
+      <div class="card pick pick-other">
+        <h2><span class="pick-icon" aria-hidden="true">→</span> Pick Warp if</h2>
         <ul><li>You want an AI terminal with completions, blocks and an agent of its own, on any platform.</li><li>You want agents that run in the cloud, kick off from issues or chat, and produce pull requests while you sleep.</li><li>Your team wants one managed, billed platform rather than individual subscriptions.</li></ul>
       </div>
-      <div class="card">
-        <h2>Pick omux if</h2>
+      <div class="card pick pick-omux">
+        <h2><span class="pick-icon" aria-hidden="true">★</span> Pick omux if</h2>
         <ul><li>You already pay for Claude Code or Codex and want a calm place to run many sessions of them on your Mac.</li><li>You don't want another account, credit balance or telemetry.</li><li>You care about seeing which session needs you and answering it in one click, with the diff and files beside it.</li></ul>
       </div>
     </div>

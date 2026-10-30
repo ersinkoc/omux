@@ -194,6 +194,8 @@ PAGES = [
     },
 ]
 
+GLANCE = {'tmux-alternative': [('Native macOS app', True, False), ('Runs on Linux and over SSH', False, True), ('Agent status and Allow/Deny', True, False), ('Resumes agent conversations', True, 'partial'), ('Worktrees and pull requests', True, False), ('Split panes', False, True), ('Detach and reattach', False, True), ('Free and open source', True, True)], 'cmux-alternative': [('Native macOS app', True, True), ("Status from the agents' own protocols", True, False), ('Allow/Deny buttons', True, False), ('Subagent transcripts', True, 'partial'), ('Worktrees with PR merge and cleanup', True, 'partial'), ('Split panes', False, True), ('SSH workspaces', False, True), ('CLI and socket API', False, True), ('Free and open source', True, True)], 'warp-alternative': [('No account or credits', True, False), ('Runs your own Claude Code and Codex', True, True), ('Agent status and Allow/Deny', True, 'partial'), ('Worktrees and pull requests', True, False), ('Cloud and scheduled agents', False, True), ('Cross-platform', False, True), ('No telemetry', True, False), ('Free and open source', True, 'partial')], 'herdr-alternative': [('Native macOS window', True, False), ('Linux, Windows and remote machines', False, True), ('Agent status', True, True), ('Allow/Deny buttons', True, False), ('Subagent transcripts', True, False), ('Detach and reattach', False, True), ('Agents controlling the tool via API', False, True), ('Worktrees and pull requests', True, False), ('Free and open source', True, True)]}
+
 def esc(s): return html.escape(s, quote=False)
 
 def head_html(title, meta, canonical, extra=""):
@@ -216,7 +218,7 @@ def head_html(title, meta, canonical, extra=""):
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
 {extra}</head>'''
 
 HEADER = '''<header class="site-header">
@@ -252,6 +254,23 @@ def footer_html(current=None):
   </div>
 </footer>'''
 
+MARK = {True: '<span class="mark yes" aria-label="yes">✓</span>', False: '<span class="mark no" aria-label="no">✕</span>',
+        "partial": '<span class="mark partial" aria-label="partly">~</span>'}
+
+def cell(text):
+    """Table cells that start with Yes or No get a mark in front."""
+    for word, key in (("Yes", True), ("No", False)):
+        if text == word or text.startswith(word + ":") or text.startswith(word + ","):
+            rest = text[len(word):].lstrip(":, ")
+            return MARK[key] + (f" {esc(rest)}" if rest else "")
+    return esc(text)
+
+def glance_html(p):
+    rows = "".join(f'<div class="glance-row"><span class="glance-label">{esc(l)}</span>{MARK[o]}{MARK[t]}</div>\n' for l, o, t in GLANCE[p["slug"]])
+    return f'''<div class="glance" role="table" aria-label="At a glance">
+      <div class="glance-row glance-head" role="row"><span class="glance-label">At a glance</span><span>omux</span><span>{esc(p["other"])}</span></div>
+{rows}    </div>'''
+
 def page_html(p):
     canonical = f"{BASE}/{p['slug']}"
     faq_ld = {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [
@@ -260,7 +279,7 @@ def page_html(p):
         {"@type": "ListItem", "position": 1, "name": "omux", "item": BASE + "/"},
         {"@type": "ListItem", "position": 2, "name": f"omux vs {p['other']}", "item": canonical}]}
     extra = f'  <script type="application/ld+json">{json.dumps(faq_ld)}</script>\n  <script type="application/ld+json">{json.dumps(crumbs_ld)}</script>\n'
-    rows = "".join(f"<tr><th scope=\"row\">{esc(f)}</th><td>{esc(o)}</td><td>{esc(t)}</td></tr>\n" for f, o, t in p["rows"])
+    rows = "".join(f"<tr><th scope=\"row\">{esc(f)}</th><td>{cell(o)}</td><td>{cell(t)}</td></tr>\n" for f, o, t in p["rows"])
     intro = "".join(f"<p class=\"lede\">{esc(x)}</p>\n" for x in p["intro"])
     better_other = "".join(f"<li>{esc(x)}</li>" for x in p["better_other"])
     better_omux = "".join(f"<li>{esc(x)}</li>" for x in p["better_omux"])
@@ -281,6 +300,13 @@ def page_html(p):
       <a class="btn btn-secondary" href="{p["other_url"]}" rel="nofollow noopener">About {esc(p["other"])}</a>
     </div>
 
+{glance_html(p)}
+
+    <figure class="shot compare-shot">
+      <img src="screenshot.png" srcset="screenshot.png 1600w, screenshot@2x.png 2400w" sizes="(min-width: 800px) 760px, calc(100vw - 32px)" width="1600" height="987" loading="lazy" alt="omux with eight projects in the sidebar, a session running five subagents, a session waiting on Allow or Deny, two Codex sessions, and the Changes tab showing the diff">
+      <figcaption>omux: projects and sessions on the left, the agent in the middle, its diff on the right. The session that needs you shows Allow and Deny.</figcaption>
+    </figure>
+
     <h2>Side by side</h2>
     <div class="table-wrap">
     <table class="compare-table">
@@ -291,12 +317,12 @@ def page_html(p):
     </div>
 
     <div class="split">
-      <div class="card">
-        <h2>Pick {esc(p["other"])} if</h2>
+      <div class="card pick pick-other">
+        <h2><span class="pick-icon" aria-hidden="true">→</span> Pick {esc(p["other"])} if</h2>
         <ul>{better_other}</ul>
       </div>
-      <div class="card">
-        <h2>Pick omux if</h2>
+      <div class="card pick pick-omux">
+        <h2><span class="pick-icon" aria-hidden="true">★</span> Pick omux if</h2>
         <ul>{better_omux}</ul>
       </div>
     </div>
