@@ -71,6 +71,21 @@ final class CodexProtocolTests: XCTestCase {
         XCTAssertEqual(manager.limits.map(\.label), ["5h", "7d"])
     }
 
+    /// The schema: a null in a rolling update "does not clear a previously observed value".
+    @MainActor
+    func testNullsInSparseQuotaUpdatesKeepKnownValues() {
+        let manager = CodexManager(), tab = UUID()
+        manager.receive(["method": "account/rateLimits/updated", "params": ["rateLimits": [
+            "primary": ["usedPercent": 10, "windowDurationMins": 300, "resetsAt": 1_900_000_000]
+        ]]], owner: tab)
+        manager.receive(["method": "account/rateLimits/updated", "params": ["rateLimits": [
+            "primary": ["usedPercent": 15, "windowDurationMins": NSNull(), "resetsAt": NSNull()], "secondary": NSNull()
+        ]]], owner: tab)
+        XCTAssertEqual(manager.limits.map(\.percent), [15])
+        XCTAssertEqual(manager.limits.map(\.label), ["5h"])
+        XCTAssertEqual(manager.limits.first?.resetsAt, Date(timeIntervalSince1970: 1_900_000_000))
+    }
+
     @MainActor
     func testNewTurnClearsPreviousApprovalAndIgnoresItsLateCompletion() {
         let manager = CodexManager(), tab = UUID()
