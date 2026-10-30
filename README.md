@@ -2,7 +2,7 @@
 
 A native macOS terminal for running [Claude Code](https://claude.com/claude-code) and [Codex](https://developers.openai.com/codex/cli) sessions side by side. Sessions are grouped into projects in a sidebar, each one keeps its own conversation across relaunches, and a files panel previews whatever the session is working on.
 
-![omux with a worktree session running three subagents, a session waiting on Allow or Deny, and the Changes tab showing the diff with a review note](docs/screenshot.png)
+![omux with eight projects in the sidebar, a session running five subagents, a session waiting on Allow or Deny, two Codex sessions, and the Changes tab showing the diff](docs/screenshot.png)
 
 Built with SwiftUI and [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm).
 
