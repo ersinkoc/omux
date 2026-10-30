@@ -68,6 +68,7 @@ final class TermView: LocalProcessTerminalView {
         events.owner = self
         processDelegate = events
         apply(Theme.current)
+        registerForDraggedTypes([.fileURL])
         // Observed, not handled, so SwiftTerm keeps drawing OSC 9;4 progress itself.
         oscObservation = observeOscEvents { [weak self] event in
             guard let note = Self.notification(code: event.code, payload: event.payload) else { return }
@@ -112,6 +113,51 @@ final class TermView: LocalProcessTerminalView {
         var isDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: path, isDirectory: &isDir), !isDir.boolValue else { return nil }
         return path
+    }
+
+    // MARK: Images and files
+
+    /// ⌘V with files or an image on the clipboard pastes their paths, which Claude Code and
+    /// Codex read as attachments. Text pastes as before; an image only wins when there is no text.
+    override func paste(_ sender: Any) {
+        let board = NSPasteboard.general
+        if let urls = board.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty {
+            paste(Self.shellEscaped(urls) + " ")
+        } else if board.string(forType: .string) == nil, let image = NSImage(pasteboard: board), let path = Self.save(image) {
+            paste(Self.shellEscaped([URL(fileURLWithPath: path)]) + " ")
+        } else {
+            super.paste(sender)
+        }
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        sender.draggingPasteboard.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) ? .copy : []
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        guard let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty else { return false }
+        window?.makeFirstResponder(self)
+        paste(Self.shellEscaped(urls) + " ")
+        return true
+    }
+
+    /// Paths the way a shell, Claude Code and Codex read them: spaces and specials escaped.
+    nonisolated static func shellEscaped(_ urls: [URL]) -> String {
+        urls.map { url in
+            url.path.map { ch in " '\"()[]{}&;|<>$`\\*?#~".contains(ch) ? "\\\(ch)" : String(ch) }.joined()
+        }.joined(separator: " ")
+    }
+
+    /// Saves a pasted image as PNG under the temporary folder, like the browser's picks.
+    private static func save(_ image: NSImage) -> String? {
+        guard let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
+              let png = rep.representation(using: .png, properties: [:]) else { return nil }
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("omux-paste", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let stamp = DateFormatter(); stamp.dateFormat = "yyyyMMdd-HHmmss"
+        let url = dir.appendingPathComponent("image-\(stamp.string(from: Date())).png")
+        guard (try? png.write(to: url)) != nil else { return nil }
+        return url.path
     }
 
     /// Types text into the session as a paste, so newlines don't submit it early.
