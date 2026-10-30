@@ -20,9 +20,15 @@ struct UsageView: View {
                     .font(.caption2).foregroundStyle(.tertiary)
             }
             if limits.isEmpty {
-                Text(isCodex ? codex.usageError ?? "Codex usage…" : monitor.error ?? "Claude usage…")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                Button {
+                    if isCodex { Task { await codex.refreshUsage() } } else { monitor.refresh() }
+                } label: {
+                    Text(isCodex ? codex.usageError ?? "Codex usage…" : monitor.error ?? "Claude usage…")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(isCodex ? codex.usageError ?? "" : monitor.detail ?? "")
             }
             ForEach(limits) { limit in
                 VStack(alignment: .leading, spacing: 2) {
