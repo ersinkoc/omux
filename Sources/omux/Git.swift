@@ -79,6 +79,13 @@ enum Git {
         return r.ok ? r.out.trimmingCharacters(in: .whitespacesAndNewlines) : nil
     }
 
+    /// The folder with this checkout's HEAD and index. A linked worktree's is under the
+    /// main repository's .git, and a subfolder's is above it, so neither is inside `dir`.
+    static func gitDirectory(_ dir: String) -> String? {
+        let r = run(["rev-parse", "--absolute-git-dir"], in: dir)
+        return r.ok ? r.out.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+    }
+
     static func currentBranch(_ dir: String) -> String? {
         let r = run(["symbolic-ref", "--quiet", "--short", "HEAD"], in: dir)
         return r.ok ? r.out.trimmingCharacters(in: .whitespacesAndNewlines) : nil
@@ -277,6 +284,19 @@ struct ChangedFile: Identifiable, Hashable {
     var id: String { path }
     var name: String { (path as NSString).lastPathComponent }
     var folder: String { (path as NSString).deletingLastPathComponent }
+}
+
+extension Array where Element == ChangedFile {
+    /// Lines added and removed; binary files count for neither.
+    var totals: DiffStat {
+        DiffStat(added: reduce(0) { $0 + ($1.added ?? 0) }, removed: reduce(0) { $0 + ($1.removed ?? 0) })
+    }
+}
+
+struct DiffStat: Equatable {
+    let added: Int
+    let removed: Int
+    var isEmpty: Bool { added == 0 && removed == 0 }
 }
 
 struct DiffLine: Identifiable, Hashable {

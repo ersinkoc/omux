@@ -175,18 +175,11 @@ extension Store {
     }
 
     static func showError(_ title: String, _ detail: String) {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = title
-        alert.informativeText = detail
-        alert.runModal()
+        Notices.shared.post(title, detail: detail, isError: true)
     }
 
     static func showInfo(_ title: String, _ detail: String) {
-        let alert = NSAlert()
-        alert.messageText = title
-        alert.informativeText = detail
-        alert.runModal()
+        Notices.shared.post(title, detail: detail, isError: false)
     }
 }
 
@@ -332,7 +325,7 @@ struct BranchChip: View {
                 Image(systemName: "arrow.triangle.branch")
                 Text(worktree.branch).lineLimit(1)
                 if changes.tabID == tabID, !changes.files.isEmpty {
-                    let totals = changes.totals
+                    let totals = changes.files.totals
                     Text("+\(totals.added)").foregroundStyle(.green)
                     Text("−\(totals.removed)").foregroundStyle(.red)
                 }

@@ -19,7 +19,7 @@ Built with SwiftUI and [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm).
 - **Pull request status.** With the [GitHub CLI](https://cli.github.com) installed, a worktree session whose branch has a pull request shows its number and state in the sidebar and header: checks running or failing, changes requested, approved or merged. Click the header chip to see each check and open it on GitHub. When checks fail, "Send Failing Checks to Session" (in the chip and the session menu) fetches the failed steps' logs of each GitHub Actions check and pastes them into the session for you to review and send. The session asks for your attention when checks start failing, a review comes in or the pull request is merged. Once it's merged, the session offers to delete its worktree and branch.
 - **Right panel** (⌥⌘F), with three tabs:
   - **Files** (⌥⌘1). Browses the session's folder and previews Markdown, code and text (with optional line wrapping), images, PDFs, audio, video, and anything else Quick Look can show. File paths mentioned in the session's output are listed at the top; ⌘-click a path in the terminal to preview it.
-  - **Changes** (⌥⌘2). The session's diff: against the base branch for worktree sessions, uncommitted changes otherwise. Click a line to leave a note, then send all notes to Claude in one message.
+  - **Changes** (⌥⌘2). The session's diff: against the base branch for worktree sessions, uncommitted changes otherwise. Click a line to leave a note, then send all notes to Claude in one message. It keeps itself up to date, and the sidebar shows each worktree session's added and removed lines.
   - **Browser** (⌥⌘3). A web view per session that opens the local server the session prints (like `localhost:3000`). The pick button sends an element's HTML, styles and a screenshot to the prompt.
 - **Images and files in the prompt.** ⌘V with an image on the clipboard pastes it as a file path, which Claude Code and Codex read as an attachment. ⌘V with files, or dropping files onto the terminal, pastes their paths.
 - **Recent conversations** (⇧⌘O). Switch between Claude Code's recent conversations and the Codex conversation catalog.
@@ -86,6 +86,7 @@ builds the release that goes on GitHub: signed with the Developer ID certificate
 | Next / previous session | ⇧⌘] / ⇧⌘[ |
 | Session 1–9 in the current project | ⌘1 … ⌘9 |
 | Right panel / Files / Changes / Browser | ⌥⌘F / ⌥⌘1 / ⌥⌘2 / ⌥⌘3 |
+| Terminal font bigger / smaller / default | ⌘+ or ⌘= / ⌘− / ⌘0 |
 
 ## Privacy
 

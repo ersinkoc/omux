@@ -27,12 +27,10 @@ final class Changes: ObservableObject {
     private var worktree: Worktree?
     private var base: String?
     private var watcher: FolderWatcher?
+    /// Commits and resets touch only HEAD and the index, which can be outside `dir`.
+    private var gitWatcher: FolderWatcher?
     private var refreshing = false
     private var again = false
-
-    var totals: (added: Int, removed: Int) {
-        files.reduce((0, 0)) { ($0.0 + ($1.added ?? 0), $0.1 + ($1.removed ?? 0)) }
-    }
 
     /// Follows the selected session. Folders outside a repo aren't watched, so a session
     /// in the home folder costs nothing.
@@ -44,22 +42,31 @@ final class Changes: ObservableObject {
         files = []
         base = nil
         watcher = nil
+        gitWatcher = nil
         isRepo = false
         baseName = worktree?.base ?? "HEAD"
-        guard let dir else { return }
+        if let dir { detectRepo(dir) }
+    }
+
+    private func detectRepo(_ dir: String) {
         Task.detached {
             let inRepo = Git.topLevel(dir) != nil
+            let gitDir = inRepo ? Git.gitDirectory(dir) : nil
             await MainActor.run {
-                guard self.dir == dir, inRepo else { return }
+                guard self.dir == dir, inRepo, !self.isRepo else { return }
                 self.isRepo = true
                 self.watcher = FolderWatcher(path: dir) { [weak self] in self?.refresh() }
+                if let gitDir, !gitDir.hasPrefix(dir + "/") {
+                    self.gitWatcher = FolderWatcher(path: gitDir) { [weak self] in self?.refresh() }
+                }
                 self.refresh()
             }
         }
     }
 
     func refresh() {
-        guard let dir, isRepo else { return }
+        guard let dir else { return }
+        guard isRepo else { detectRepo(dir); return }
         if refreshing { again = true; return }
         refreshing = true
         let worktree = self.worktree
@@ -71,6 +78,7 @@ final class Changes: ObservableObject {
                 if self.dir == dir {
                     self.base = base
                     if self.files != files { self.files = files }
+                    if worktree != nil, let tabID = self.tabID { DiffStatMonitor.shared.update(tabID, files.totals) }
                 }
                 if self.again || self.dir != dir {
                     self.again = false
@@ -110,6 +118,55 @@ final class Changes: ObservableObject {
         }.joined(separator: "\n")
         Store.shared.sendText("Review notes on your changes:\n" + body, to: tabID, submit: true)
         notes[tabID] = []
+    }
+}
+
+/// Lines changed in each worktree session, for the sidebar. The selected session updates
+/// with its Changes panel, the others about once a minute and on coming back to omux.
+@MainActor
+final class DiffStatMonitor: ObservableObject {
+    static let shared = DiffStatMonitor()
+
+    @Published private(set) var stats: [UUID: DiffStat] = [:]
+
+    private let queue = DispatchQueue(label: "omux.diffstats", qos: .utility)
+    private var polling = false
+    private var timer: Timer?
+
+    private init() {
+        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
+            Task { @MainActor in DiffStatMonitor.shared.poll() }
+        }
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
+            Task { @MainActor in DiffStatMonitor.shared.poll() }
+        }
+        DispatchQueue.main.async { self.poll() }
+    }
+
+    func update(_ id: UUID, _ stat: DiffStat) {
+        if stats[id] != stat { stats[id] = stat }
+    }
+
+    func poll() {
+        guard !polling else { return }
+        let store = Store.shared
+        let sessions = store.allTabs.compactMap { entry -> (id: UUID, dir: String, worktree: Worktree)? in
+            guard let worktree = entry.tab.worktree, let dir = store.directory(of: entry.tab),
+                  FileManager.default.fileExists(atPath: dir) else { return nil }
+            return (entry.tab.id, dir, worktree)
+        }
+        polling = true
+        queue.async {
+            var found: [UUID: DiffStat] = [:]
+            for session in sessions {
+                let base = Git.diffBase(dir: session.dir, worktree: session.worktree)
+                found[session.id] = Git.changedFiles(dir: session.dir, base: base).totals
+            }
+            DispatchQueue.main.async {
+                self.polling = false
+                if found != self.stats { self.stats = found }
+            }
+        }
     }
 }
 
@@ -157,6 +214,13 @@ struct ChangesPanel: View {
         .onChange(of: changes.files) { _, _ in pickFile(); reload() }
         .onChange(of: selected) { _, _ in editing = nil; reload() }
         .onChange(of: changes.tabID) { _, _ in selected = nil; editing = nil; pickFile() }
+        // Folders outside a repo aren't watched, but a session can run git init in one.
+        .task(id: changes.isRepo) {
+            while !changes.isRepo, !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(3))
+                changes.refresh()
+            }
+        }
     }
 
     private func placeholder(_ title: String, _ detail: String) -> some View {
