@@ -182,12 +182,16 @@ enum Persistence {
             return dir
         }
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let dir = base.appendingPathComponent("omux", isDirectory: true)
+        // A beta build (./build.sh --beta) keeps its own workspace next to the release one.
+        let dir = base.appendingPathComponent(Persistence.isBeta ? "omux-beta" : "omux", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }()
 
     static var workspaceURL: URL { directory.appendingPathComponent("workspace.json") }
+
+    /// Built with `./build.sh --beta`: a separate app, preferences and workspace.
+    static let isBeta = Bundle.main.bundleIdentifier?.hasSuffix(".beta") == true
 
     static var backupURL: URL { directory.appendingPathComponent("workspace.json.bak") }
 

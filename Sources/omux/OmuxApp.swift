@@ -6,8 +6,10 @@ struct OmuxApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var store = Store.shared
 
+    init() { Prefs.importReleaseSettingsIfBeta() }
+
     var body: some Scene {
-        Window("omux", id: "main") {
+        Window(Persistence.isBeta ? "omux Beta" : "omux", id: "main") {
             ContentView()
                 .environmentObject(store)
                 .frame(minWidth: 720, minHeight: 420)
@@ -36,6 +38,22 @@ enum Prefs {
     static let notifyNeedsYou = "notifyNeedsYou"
     static let notifyDone = "notifyDone"
     static let notifyPrograms = "notifyPrograms"
+
+    static let all = [confirmQuit, showFolderPath, usageInterval, theme, autoResume, showFiles, filesByDate,
+                      filesBrowserCollapsed, previewWrapLines, panelTab, fontFamily, fontSize,
+                      notifyNeedsYou, notifyDone, notifyPrograms]
+
+    /// A beta build (./build.sh --beta) starts out with the release app's settings, such as
+    /// the theme and font, instead of the defaults. Only on its first launch.
+    static func importReleaseSettingsIfBeta() {
+        let flag = "importedReleaseSettings"
+        guard Persistence.isBeta, !UserDefaults.standard.bool(forKey: flag),
+              let release = UserDefaults(suiteName: "net.pf1.omux") else { return }
+        for key in all {
+            if let value = release.object(forKey: key) { UserDefaults.standard.set(value, forKey: key) }
+        }
+        UserDefaults.standard.set(true, forKey: flag)
+    }
 }
 
 struct SettingsView: View {
