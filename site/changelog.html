@@ -41,11 +41,39 @@
     <h1>Changelog</h1>
     <p class="lede muted">What changed in each release, newest first. Versions follow <a href="https://semver.org">semantic versioning</a>; the source is <a href="https://github.com/onurozcan/omux/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
 <div class="timeline">
+<article class="release" id="v0.7.0">
+  <div class="release-rail"><span class="node"></span></div>
+  <div class="release-meta">
+    <h2><a href="#v0.7.0">0.7.0</a></h2>
+    <span class="badge badge-latest">Latest</span>
+    <p><time datetime="2026-10-30">October 30, 2026</time></p>
+    <p><a href="https://github.com/onurozcan/omux/releases/tag/v0.7.0">Release on GitHub</a></p>
+  </div>
+  <div class="release-body">
+<ul class="entries">
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Send failing checks to a session.</strong> When a worktree session's pull request has failing checks, "Send Failing Checks to Session" in the pull request chip and the session menu fetches the failed steps' logs of each GitHub Actions check through gh, trims them to the last lines and pastes them into the session without submitting, so you can read them before the agent acts on them. Other checks are listed with their links. (<a href="https://github.com/onurozcan/omux/pull/6">#6</a>)</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Line counts in the sidebar.</strong> Worktree sessions show their added and removed lines next to the branch. The selected session updates as its files change, the others about once a minute and when you come back to omux.</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Terminal font size from the keyboard.</strong> ⌘+ (or ⌘=), ⌘− and ⌘0 in the View menu. (<a href="https://github.com/onurozcan/omux/pull/17">#17</a>)</div></li>
+<li class="entry"><span class="chip chip-changed">Changed</span><div class="entry-text">Errors and results of Git actions appear in a banner over the terminal instead of an alert, so they no longer stop what you're doing. Errors stay until dismissed and their text can be selected; results go away on their own. Questions that need an answer are still alerts.</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">The Changes tab missed commits and resets in worktree sessions and in sessions in a subfolder of a repository, because Git's files are outside the session's folder there. It also now notices when <code>git init</code> runs in a session's folder.</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">Four more Changes tab bugs: sessions in a subfolder of a repository got a blank diff, file names that look like patterns (<code>a*</code>, <code>:x</code>) were read as patterns, staged files before a repository's first commit didn't show, and an untracked symlink to a big file was read in full on every refresh. (<a href="https://github.com/onurozcan/omux/pull/19">#19</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">A worktree setup command ending in <code>;</code> or <code>&amp;</code> was a shell parse error, so neither the setup nor the session ran. (<a href="https://github.com/onurozcan/omux/pull/20">#20</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">Closing a worktree session whose base branch had been deleted or renamed said the worktree had nothing new, right above the Delete button. It now says the commits couldn't be compared. (<a href="https://github.com/onurozcan/omux/pull/21">#21</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">Text pasted into a session can no longer end the paste early: escape characters are removed inside a bracketed paste, so a file name from a cloned repository can't submit lines after it as commands. (<a href="https://github.com/onurozcan/omux/pull/22">#22</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">The browser's Try Again now loads the address that failed, so it works once a dev server comes up. (<a href="https://github.com/onurozcan/omux/pull/23">#23</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">A missing or crashing <code>codex</code> showed a bare CancellationError instead of the message saying to install Codex CLI. (<a href="https://github.com/onurozcan/omux/pull/24">#24</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">A Codex rate limit update with a null field cleared the known 5-hour window and its reset time until the next full read. (<a href="https://github.com/onurozcan/omux/pull/25">#25</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">Opening a folder whose project was saved as <code>~/code/app</code> or with a trailing slash created a second project instead of reusing the first. (<a href="https://github.com/onurozcan/omux/pull/13">#13</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">A dropped or pasted file whose name contains <code>!</code> failed in the shell with "event not found". (<a href="https://github.com/onurozcan/omux/pull/15">#15</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text"><code>build.sh</code> kept going after a failed <code>swift build</code> and reinstalled the previous binary. It now stops, and a macOS CI workflow builds and tests every pull request. (<a href="https://github.com/onurozcan/omux/pull/16">#16</a>)</div></li>
+</ul>
+  </div>
+</article>
 <article class="release" id="v0.6.1">
   <div class="release-rail"><span class="node"></span></div>
   <div class="release-meta">
     <h2><a href="#v0.6.1">0.6.1</a></h2>
-    <span class="badge badge-latest">Latest</span>
+    
     <p><time datetime="2026-10-30">October 30, 2026</time></p>
     <p><a href="https://github.com/onurozcan/omux/releases/tag/v0.6.1">Release on GitHub</a></p>
   </div>

@@ -4,12 +4,6 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
-	<key>CFBundleExecutable</key>
-	<string>omux</string>
-	<key>CFBundleIconFile</key>
-	<string>omux</string>
-	<key>CFBundleIdentifier</key>
-	<string>net.pf1.omux</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -25,6 +19,12 @@
 			</array>
 		</dict>
 	</array>
+	<key>CFBundleExecutable</key>
+	<string>omux</string>
+	<key>CFBundleIconFile</key>
+	<string>omux</string>
+	<key>CFBundleIdentifier</key>
+	<string>net.pf1.omux</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -32,9 +32,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.6.1</string>
+	<string>0.7.0</string>
 	<key>CFBundleVersion</key>
-	<string>8</string>
+	<string>9</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
 	<key>NSAppTransportSecurity</key>
@@ -48,16 +48,6 @@
 	<true/>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
-	<key>NSSupportsAutomaticTermination</key>
-	<false/>
-	<key>SUFeedURL</key>
-	<string>https://omux.app/appcast.xml</string>
-	<key>SUPublicEDKey</key>
-	<string>JXrnDvYmpWaRE9raURgAKw8apKLJtgWg1Nxhe20OoM0=</string>
-	<key>SUEnableAutomaticChecks</key>
-	<true/>
-	<key>NSSupportsSuddenTermination</key>
-	<false/>
 	<key>NSServices</key>
 	<array>
 		<dict>
@@ -76,5 +66,15 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSSupportsAutomaticTermination</key>
+	<false/>
+	<key>NSSupportsSuddenTermination</key>
+	<false/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://omux.app/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>JXrnDvYmpWaRE9raURgAKw8apKLJtgWg1Nxhe20OoM0=</string>
 </dict>
 </plist>

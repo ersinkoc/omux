@@ -2,13 +2,13 @@
 
 All notable changes to omux are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
-## [Unreleased]
+## [0.7.0] - 2026-10-30
 
 ### Added
 
-- **Send failing checks to a session.** When a worktree session's pull request has failing checks, "Send Failing Checks to Session" in the pull request chip and the session menu fetches the failed steps' logs of each GitHub Actions check through gh, trims them to the last lines and pastes them into the session without submitting, so you can read them before the agent acts on them. Other checks are listed with their links.
+- **Send failing checks to a session.** When a worktree session's pull request has failing checks, "Send Failing Checks to Session" in the pull request chip and the session menu fetches the failed steps' logs of each GitHub Actions check through gh, trims them to the last lines and pastes them into the session without submitting, so you can read them before the agent acts on them. Other checks are listed with their links. ([#6](https://github.com/onurozcan/omux/pull/6))
 - **Line counts in the sidebar.** Worktree sessions show their added and removed lines next to the branch. The selected session updates as its files change, the others about once a minute and when you come back to omux.
-- **Terminal font size from the keyboard.** ⌘+ (or ⌘=), ⌘− and ⌘0 in the View menu.
+- **Terminal font size from the keyboard.** ⌘+ (or ⌘=), ⌘− and ⌘0 in the View menu. ([#17](https://github.com/onurozcan/omux/pull/17))
 
 ### Changed
 
@@ -17,6 +17,16 @@ All notable changes to omux are listed here. Versions follow [Semantic Versionin
 ### Fixed
 
 - The Changes tab missed commits and resets in worktree sessions and in sessions in a subfolder of a repository, because Git's files are outside the session's folder there. It also now notices when `git init` runs in a session's folder.
+- Four more Changes tab bugs: sessions in a subfolder of a repository got a blank diff, file names that look like patterns (`a*`, `:x`) were read as patterns, staged files before a repository's first commit didn't show, and an untracked symlink to a big file was read in full on every refresh. ([#19](https://github.com/onurozcan/omux/pull/19))
+- A worktree setup command ending in `;` or `&` was a shell parse error, so neither the setup nor the session ran. ([#20](https://github.com/onurozcan/omux/pull/20))
+- Closing a worktree session whose base branch had been deleted or renamed said the worktree had nothing new, right above the Delete button. It now says the commits couldn't be compared. ([#21](https://github.com/onurozcan/omux/pull/21))
+- Text pasted into a session can no longer end the paste early: escape characters are removed inside a bracketed paste, so a file name from a cloned repository can't submit lines after it as commands. ([#22](https://github.com/onurozcan/omux/pull/22))
+- The browser's Try Again now loads the address that failed, so it works once a dev server comes up. ([#23](https://github.com/onurozcan/omux/pull/23))
+- A missing or crashing `codex` showed a bare CancellationError instead of the message saying to install Codex CLI. ([#24](https://github.com/onurozcan/omux/pull/24))
+- A Codex rate limit update with a null field cleared the known 5-hour window and its reset time until the next full read. ([#25](https://github.com/onurozcan/omux/pull/25))
+- Opening a folder whose project was saved as `~/code/app` or with a trailing slash created a second project instead of reusing the first. ([#13](https://github.com/onurozcan/omux/pull/13))
+- A dropped or pasted file whose name contains `!` failed in the shell with "event not found". ([#15](https://github.com/onurozcan/omux/pull/15))
+- `build.sh` kept going after a failed `swift build` and reinstalled the previous binary. It now stops, and a macOS CI workflow builds and tests every pull request. ([#16](https://github.com/onurozcan/omux/pull/16))
 
 ## [0.6.1] - 2026-10-30
 

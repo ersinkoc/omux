@@ -3,6 +3,43 @@
     <channel>
         <title>omux</title>
         <item>
+            <title>0.7.0</title>
+            <pubDate>Fri, 30 Oct 2026 20:55:36 +0300</pubDate>
+            <link>https://omux.app</link>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>0.7.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<html><body style="font: 13px -apple-system, sans-serif">
+<h3>Added</h3>
+<ul>
+<li><strong>Send failing checks to a session.</strong> When a worktree session's pull request has failing checks, "Send Failing Checks to Session" in the pull request chip and the session menu fetches the failed steps' logs of each GitHub Actions check through gh, trims them to the last lines and pastes them into the session without submitting, so you can read them before the agent acts on them. Other checks are listed with their links. (<a href="https://github.com/onurozcan/omux/pull/6">#6</a>)</li>
+<li><strong>Line counts in the sidebar.</strong> Worktree sessions show their added and removed lines next to the branch. The selected session updates as its files change, the others about once a minute and when you come back to omux.</li>
+<li><strong>Terminal font size from the keyboard.</strong> ⌘+ (or ⌘=), ⌘− and ⌘0 in the View menu. (<a href="https://github.com/onurozcan/omux/pull/17">#17</a>)</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Errors and results of Git actions appear in a banner over the terminal instead of an alert, so they no longer stop what you're doing. Errors stay until dismissed and their text can be selected; results go away on their own. Questions that need an answer are still alerts.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>The Changes tab missed commits and resets in worktree sessions and in sessions in a subfolder of a repository, because Git's files are outside the session's folder there. It also now notices when <code>git init</code> runs in a session's folder.</li>
+<li>Four more Changes tab bugs: sessions in a subfolder of a repository got a blank diff, file names that look like patterns (<code>a*</code>, <code>:x</code>) were read as patterns, staged files before a repository's first commit didn't show, and an untracked symlink to a big file was read in full on every refresh. (<a href="https://github.com/onurozcan/omux/pull/19">#19</a>)</li>
+<li>A worktree setup command ending in <code>;</code> or <code>&amp;</code> was a shell parse error, so neither the setup nor the session ran. (<a href="https://github.com/onurozcan/omux/pull/20">#20</a>)</li>
+<li>Closing a worktree session whose base branch had been deleted or renamed said the worktree had nothing new, right above the Delete button. It now says the commits couldn't be compared. (<a href="https://github.com/onurozcan/omux/pull/21">#21</a>)</li>
+<li>Text pasted into a session can no longer end the paste early: escape characters are removed inside a bracketed paste, so a file name from a cloned repository can't submit lines after it as commands. (<a href="https://github.com/onurozcan/omux/pull/22">#22</a>)</li>
+<li>The browser's Try Again now loads the address that failed, so it works once a dev server comes up. (<a href="https://github.com/onurozcan/omux/pull/23">#23</a>)</li>
+<li>A missing or crashing <code>codex</code> showed a bare CancellationError instead of the message saying to install Codex CLI. (<a href="https://github.com/onurozcan/omux/pull/24">#24</a>)</li>
+<li>A Codex rate limit update with a null field cleared the known 5-hour window and its reset time until the next full read. (<a href="https://github.com/onurozcan/omux/pull/25">#25</a>)</li>
+<li>Opening a folder whose project was saved as <code>~/code/app</code> or with a trailing slash created a second project instead of reusing the first. (<a href="https://github.com/onurozcan/omux/pull/13">#13</a>)</li>
+<li>A dropped or pasted file whose name contains <code>!</code> failed in the shell with "event not found". (<a href="https://github.com/onurozcan/omux/pull/15">#15</a>)</li>
+<li><code>build.sh</code> kept going after a failed <code>swift build</code> and reinstalled the previous binary. It now stops, and a macOS CI workflow builds and tests every pull request. (<a href="https://github.com/onurozcan/omux/pull/16">#16</a>)</li>
+</ul>
+</body></html>
+]]></description>
+            <enclosure url="https://github.com/onurozcan/omux/releases/download/v0.7.0/omux-0.7.0.zip" length="4734751" type="application/octet-stream" sparkle:edSignature="hDWkIj570EpEai68JqdJl9qZljsULMHIenB5fSj8qLcHbd6sFOD+oAWTCccdw+P/U9ZoKJvrj9c/aHDRlOMAAw=="/>
+        </item>
+        <item>
             <title>0.6.1</title>
             <pubDate>Fri, 30 Oct 2026 14:24:32 +0300</pubDate>
             <link>https://omux.app</link>
