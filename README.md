@@ -44,6 +44,10 @@ Codex permits one writing app-server per conversation. A conversation currently 
 
 Codex subagents appear in the sidebar/header. Their preview shows up to 100 recent protocol items. Review notes and browser picks are pasted into the selected session's prompt. Managed sessions use the Codex provider selection; custom wrappers remain terminal commands.
 
+## Install
+
+Download `omux-<version>.dmg` from the [latest release](https://github.com/onurozcan/omux/releases/latest), open it and drag omux to Applications. The app is signed with a Developer ID and notarized, so it opens without a warning. Or build it yourself:
+
 ## Build
 
 ```sh
