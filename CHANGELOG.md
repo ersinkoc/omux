@@ -7,6 +7,13 @@ All notable changes to omux are listed here. Versions follow [Semantic Versionin
 ### Added
 
 - **Worktree setup.** A project can have a setup command that runs in each new worktree before the session starts, such as `cp "$OMUX_REPO/.env" . && npm install`, so the files Git ignores and the dependencies are in place before Claude begins. The session's command only starts if setup succeeds. Set it in the New Session in Worktree sheet or in Edit Project. `$OMUX_REPO` points to the main checkout in every worktree session. ([#5](https://github.com/onurozcan/omux/pull/5))
+- **Welcome sheet** on first launch, and under Help › Welcome to omux: checks that Claude Code and Codex are installed, turns on notifications, checks the usage limits with an explanation of what they need, and opens a first project.
+- **Paste images and drop files into a session.** ⌘V with an image on the clipboard saves it and pastes its path, which Claude Code and Codex read as an attachment; ⌘V with files, or dropping files on the terminal, pastes their paths.
+- **Notification style and sound.** Settings › Notifications can play a sound without a banner, and pick which macOS sound.
+
+### Changed
+
+- The usage bar says what's wrong when it can't show limits (no Claude login, API key login, Keychain access denied, login expired) and clicking it retries. The old text was "Not signed in to Claude Code" for all of them.
 
 ## [0.4.0] - 2026-10-30
 

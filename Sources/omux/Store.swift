@@ -32,6 +32,7 @@ final class Store: ObservableObject {
     @Published var editingGroupID: UUID?
     @Published var showQuickSwitcher = false
     @Published var showRecentSessions = false
+    @Published var showWelcome = false
     /// A file the user ⌘-clicked in a terminal; the files panel shows it.
     @Published var previewRequest: String?
     /// File paths mentioned in the selected session's output, newest last.
@@ -97,6 +98,14 @@ final class Store: ObservableObject {
             self?.save()
         }
         if saved == nil { save() }
+        // Fresh installs (no workspace yet) get the welcome sheet; updates don't. It stays under
+        // Help › Welcome to omux. A beat later, so the window is there to present it on.
+        if !UserDefaults.standard.bool(forKey: Prefs.welcomed) {
+            UserDefaults.standard.set(true, forKey: Prefs.welcomed)
+            if saved == nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.showWelcome = true }
+            }
+        }
         if UserDefaults.standard.bool(forKey: Prefs.autoResume) {
             startAllSessions()
         } else {

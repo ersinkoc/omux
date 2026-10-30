@@ -222,9 +222,20 @@ final class CodexManager: ObservableObject {
     }
 
     func refreshUsage() async {
-        guard !refreshingUsage, let connection = connections.values.first(where: \.isReady) else { return }
+        guard !refreshingUsage else { return }
         refreshingUsage = true
         defer { refreshingUsage = false }
+        let connection: CodexConnection
+        if let ready = connections.values.first(where: \.isReady) {
+            connection = ready
+        } else {
+            // No Codex session yet: ask the catalog server, the one the recent list uses.
+            do { try await catalog.connect() } catch {
+                quotaBucket = [:]; limits = []; usageError = error.localizedDescription
+                return
+            }
+            connection = catalog
+        }
         do {
             // A stale login makes the usage request fail with a 401; say so instead.
             let account = try await connection.request("account/read", params: ["refreshToken": true])

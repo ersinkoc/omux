@@ -42,6 +42,7 @@ enum Prefs {
     static let notifyStyle = "notifyStyle"
     /// A macOS alert sound name, or "Default".
     static let notifySound = "notifySound"
+    static let welcomed = "welcomed"
 
     static let all = [confirmQuit, showFolderPath, usageInterval, theme, autoResume, showFiles, filesByDate,
                       filesBrowserCollapsed, previewWrapLines, panelTab, fontFamily, fontSize,
@@ -224,6 +225,7 @@ struct ContentView: View {
         .sheet(item: $store.newWorktreeGroupID) { WorktreeSheet(groupID: $0).environmentObject(store) }
         .sheet(isPresented: $store.showQuickSwitcher) { QuickSwitcher().environmentObject(store) }
         .sheet(isPresented: $store.showRecentSessions) { RecentSessionsSheet().environmentObject(store) }
+        .sheet(isPresented: $store.showWelcome) { WelcomeSheet().environmentObject(store) }
         .sheet(item: $store.editingTabID) { TabEditSheet(tabID: $0).environmentObject(store) }
         .sheet(item: $store.editingGroupID) { GroupEditSheet(groupID: $0).environmentObject(store) }
         .onAppear { AppDelegate.openWindow = openWindow }
@@ -342,6 +344,10 @@ struct AppCommands: Commands {
                 .keyboardShortcut(.return, modifiers: [.command, .shift])
             Divider()
             Button("Jump to Session…") { store.showQuickSwitcher = true }.keyboardShortcut("k")
+        }
+        CommandGroup(replacing: .help) {
+            Button("Welcome to omux…") { store.showWelcome = true }
+            Button("omux on GitHub") { NSWorkspace.shared.open(URL(string: "https://github.com/onurozcan/omux")!) }
             Button("Next Session") { store.selectRelative(1) }.keyboardShortcut("]", modifiers: [.command, .shift])
             Button("Previous Session") { store.selectRelative(-1) }.keyboardShortcut("[", modifiers: [.command, .shift])
             Divider()
