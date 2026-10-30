@@ -9,6 +9,9 @@
 #                         Needs a notarytool keychain profile (see NOTARY_PROFILE below).
 #   ./build.sh --dist --no-notarize   same, but skips notarization (for checking the build).
 set -e
+# A failure anywhere in a pipeline counts; otherwise a failed swift build goes on to package
+# and install the previous binary.
+setopt pipe_fail
 setopt null_glob
 cd "$(dirname "$0")"
 
@@ -44,23 +47,26 @@ SPARKLE_DIR=.build/artifacts/sparkle/Sparkle
 mkdir -p "$APP/Contents/Frameworks"
 cp -R "$SPARKLE_DIR/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework" "$APP/Contents/Frameworks/"
 
+# Filters a command's output like grep -v, without failing when nothing is left to print.
+without() { grep -v "$@" || true; }
+
 # Signs Sparkle's nested helpers with our identity, inside out, so library validation and
 # notarization accept them. $1 identity, remaining args extra codesign options.
 sign_sparkle() {
   local identity=$1; shift
   local fw="$APP/Contents/Frameworks/Sparkle.framework/Versions/B"
   for item in "$fw/XPCServices/Installer.xpc" "$fw/XPCServices/Downloader.xpc" "$fw/Autoupdate" "$fw/Updater.app"; do
-    codesign --force --sign "$identity" --preserve-metadata=entitlements "$@" "$item" 2>&1 | grep -v "replacing existing signature" || true
+    codesign --force --sign "$identity" --preserve-metadata=entitlements "$@" "$item" 2>&1 | without "replacing existing signature"
   done
-  codesign --force --sign "$identity" "$@" "$APP/Contents/Frameworks/Sparkle.framework" 2>&1 | grep -v "replacing existing signature" || true
+  codesign --force --sign "$identity" "$@" "$APP/Contents/Frameworks/Sparkle.framework" 2>&1 | without "replacing existing signature"
 }
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
 
 if [[ "$MODE" == "install" ]]; then
   # A stable signing identity keeps macOS from re-asking permissions after each rebuild.
-  IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | head -1 | awk '{print $2}')
+  IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | head -1 | awk '{print $2}' || true)
   sign_sparkle "${IDENTITY:--}"
-  codesign --force --sign "${IDENTITY:--}" "$APP" 2>&1 | grep -v "replacing existing signature" || true
+  codesign --force --sign "${IDENTITY:--}" "$APP" 2>&1 | without "replacing existing signature"
   # Install to /Applications so Finder's "Open in omux" service and Dock stay registered.
   rm -rf "/Applications/$NAME.app"
   cp -R "$APP" "/Applications/$NAME.app"
@@ -72,7 +78,7 @@ if [[ "$MODE" == "install" ]]; then
 fi
 
 # --- Distribution build ---
-IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application" | head -1 | awk '{print $2}')
+IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application" | head -1 | awk '{print $2}' || true)
 if [[ -z "$IDENTITY" ]]; then
   echo "No 'Developer ID Application' certificate in the keychain. Create one in Xcode › Settings › Accounts › Manage Certificates." >&2
   exit 1
@@ -153,7 +159,7 @@ print(f"<html><body style=\"font: 13px -apple-system, sans-serif\">\n{body}\n</b
 PY
   "$SPARKLE_DIR/bin/generate_appcast" --embed-release-notes --link https://omux.app \
     --download-url-prefix "https://github.com/onurozcan/omux/releases/download/v$VERSION/" \
-    -o site/appcast.xml "$STAGE" | grep -vE "^\s*$" || true
+    -o site/appcast.xml "$STAGE" | without -E "^\s*$"
   rm -rf "$STAGE"
   echo "Updated site/appcast.xml (deploy the site to publish the update)"
 fi
