@@ -96,11 +96,31 @@ enum Fonts {
         .filter { NSFont(name: $0, size: 12)?.isFixedPitch == true }
         .sorted()
 
+    static let sizes = 9.0 ... 24.0
+    static let defaultSize = 13.0
+
+    static var size: Double {
+        let stored = UserDefaults.standard.double(forKey: Prefs.fontSize)
+        return stored > 0 ? stored : defaultSize
+    }
+
+    /// Steps the terminal font size within `sizes`; nil goes back to the default.
+    static func adjustSize(by step: Double?) {
+        let size = step.map { min(max(Self.size + $0, sizes.lowerBound), sizes.upperBound) } ?? defaultSize
+        UserDefaults.standard.set(size, forKey: Prefs.fontSize)
+    }
+
+    /// Whether a key press is ⌘= or, on layouts where = takes Shift, ⇧⌘=. The Bigger menu
+    /// item only matches "+", which needs Shift on a US keyboard, and on Turkish Q it's
+    /// ⇧⌘4, which macOS takes for screenshots.
+    static func isBiggerKey(_ characters: String?, _ flags: NSEvent.ModifierFlags) -> Bool {
+        characters == "=" && flags.intersection([.command, .control, .option]) == .command
+    }
+
     /// Terminal font from Settings; empty family means the system monospaced font.
     static func terminal() -> NSFont {
         let family = UserDefaults.standard.string(forKey: Prefs.fontFamily) ?? ""
-        let stored = UserDefaults.standard.double(forKey: Prefs.fontSize)
-        let size = stored > 0 ? stored : 13
+        let size = Self.size
         return (family.isEmpty ? nil : NSFont(name: family, size: size))
             ?? NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
     }

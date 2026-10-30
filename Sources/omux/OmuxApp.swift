@@ -67,7 +67,7 @@ struct SettingsView: View {
     @AppStorage(Prefs.usageInterval) private var usageInterval = 300.0
     @AppStorage(Prefs.theme) private var theme = Theme.dark.rawValue
     @AppStorage(Prefs.fontFamily) private var fontFamily = ""
-    @AppStorage(Prefs.fontSize) private var fontSize = 13.0
+    @AppStorage(Prefs.fontSize) private var fontSize = Fonts.defaultSize
     @AppStorage(Prefs.autoResume) private var autoResume = false
     @AppStorage(Prefs.notifyStyle) private var notifyStyle = "banner"
     @AppStorage(Prefs.notifySound) private var notifySound = "Default"
@@ -86,7 +86,7 @@ struct SettingsView: View {
                     Text("System Mono").tag("")
                     ForEach(Fonts.monospaceFamilies, id: \.self) { Text($0).tag($0) }
                 }
-                Stepper("Font size: \(Int(fontSize)) pt", value: $fontSize, in: 9 ... 24)
+                Stepper("Font size: \(Int(fontSize)) pt", value: $fontSize, in: Fonts.sizes)
             }
             Section("Sidebar") {
                 Toggle("Show folder path under session name", isOn: $showFolderPath)
@@ -164,7 +164,7 @@ struct ContentView: View {
     @Environment(\.openWindow) private var openWindow
     @AppStorage(Prefs.theme) private var themeName = Theme.dark.rawValue
     @AppStorage(Prefs.fontFamily) private var fontFamily = ""
-    @AppStorage(Prefs.fontSize) private var fontSize = 13.0
+    @AppStorage(Prefs.fontSize) private var fontSize = Fonts.defaultSize
     @AppStorage(Prefs.showFiles) private var showFiles = false
 
     private var theme: Theme { Theme(rawValue: themeName) ?? .dark }
@@ -332,6 +332,10 @@ struct AppCommands: Commands {
             Button("Files") { store.showPanel(.files) }.keyboardShortcut("1", modifiers: [.command, .option])
             Button("Changes") { store.showPanel(.changes) }.keyboardShortcut("2", modifiers: [.command, .option])
             Button("Browser") { store.showPanel(.browser) }.keyboardShortcut("3", modifiers: [.command, .option])
+            Divider()
+            Button("Bigger") { Fonts.adjustSize(by: 1) }.keyboardShortcut("+")
+            Button("Smaller") { Fonts.adjustSize(by: -1) }.keyboardShortcut("-")
+            Button("Default Font Size") { Fonts.adjustSize(by: nil) }.keyboardShortcut("0")
         }
         CommandMenu("Session") {
             Button("Rename") { store.renamingID = store.selectedTabID }.keyboardShortcut("r")
@@ -381,6 +385,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSUpdateDynamicServices()
         Notifier.shared.activate()
         _ = Updater.shared
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard Fonts.isBiggerKey(event.charactersIgnoringModifiers, event.modifierFlags) else { return event }
+            Fonts.adjustSize(by: 1)
+            return nil
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
