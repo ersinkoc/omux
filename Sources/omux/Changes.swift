@@ -114,7 +114,8 @@ final class Changes: ObservableObject {
     func sendNotes() {
         guard let tabID, let list = notes[tabID], !list.isEmpty else { return }
         let body = list.map { note in
-            "- \(note.path)\(note.lineNumber.map { ":\($0)" } ?? ""): \(note.text)"
+            // The name comes from the repository and can hold newlines, which Return would run.
+            "- \(CheckLog.plain(note.path))\(note.lineNumber.map { ":\($0)" } ?? ""): \(note.text)"
         }.joined(separator: "\n")
         Store.shared.sendText("Review notes on your changes:\n" + body, to: tabID, submit: true)
         notes[tabID] = []
