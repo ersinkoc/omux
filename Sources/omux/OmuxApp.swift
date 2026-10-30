@@ -99,6 +99,31 @@ struct SettingsView: View {
     }
 }
 
+/// Keeps the close, minimize and zoom buttons visible while the toolbar is hidden. Hiding the
+/// window toolbar removes them on some macOS versions; keeping the toolbar instead leaves an
+/// invisible strip that pushes the content down and swallows clicks on the sidebar's buttons.
+private struct WindowChrome: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { Self.configure(view.window) }
+        return view
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        DispatchQueue.main.async { Self.configure(view.window) }
+    }
+
+    private static func configure(_ window: NSWindow?) {
+        guard let window else { return }
+        window.styleMask.formUnion([.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView])
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        for button in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
+            window.standardWindowButton(button)?.isHidden = false
+        }
+    }
+}
+
 struct ContentView: View {
     @EnvironmentObject var store: Store
     @Environment(\.openWindow) private var openWindow
@@ -140,14 +165,18 @@ struct ContentView: View {
                     }
                 }
                 .frame(minWidth: 360)
+                .ignoresSafeArea(.container, edges: .top)
                 if showFiles {
                     RightPanel(root: projectRoot, theme: theme)
                         .frame(minWidth: 260, idealWidth: 380, maxWidth: 900)
+                        .ignoresSafeArea(.container, edges: .top)
                 }
             }
+            // Each pane ignores the title bar inset itself, so the session header and the panel's
+            // tabs sit level with the sidebar's buttons. On the split view alone it doesn't reach them.
         }
-        // Hiding the toolbar itself also hides the window buttons on some macOS versions.
-        .toolbarBackground(.hidden, for: .windowToolbar)
+        .toolbar(.hidden, for: .windowToolbar)
+        .background(WindowChrome())
         .preferredColorScheme(theme.colorScheme)
         .background(Color(nsColor: theme.chrome))
         .onChange(of: themeName) { _, _ in store.applyAppearance() }

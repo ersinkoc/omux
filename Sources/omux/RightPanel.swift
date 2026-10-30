@@ -26,7 +26,9 @@ struct RightPanel: View {
             .padding(.horizontal, 6)
             .frame(height: 28)
             .background(Color(nsColor: theme.chrome))
-            .overlay(alignment: .bottom) { Rectangle().fill(.primary.opacity(0.08)).frame(height: 1) }
+            // A real hairline rather than an overlay: the split views below extend into any safe
+            // area they touch, and the tab bar sits in the title bar's. The hairline keeps them apart.
+            Rectangle().fill(.primary.opacity(0.08)).frame(height: 1)
 
             ZStack {
                 // Files stays alive so its preview and scroll position survive tab switches.
