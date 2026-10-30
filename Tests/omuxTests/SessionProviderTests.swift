@@ -14,6 +14,17 @@ final class SessionProviderTests: XCTestCase {
         XCTAssertEqual(group.command, "claude --model opus")
     }
 
+    func testValuesFromANewerVersionDoNotDropTheWorkspace() throws {
+        let data = Data("""
+        {"groups":[{"name":"Work","command":"codex","provider":"future","tabs":[{"name":"A","provider":"future","color":"future","command":"claude"}]}]}
+        """.utf8)
+        let group = try XCTUnwrap(JSONDecoder().decode(Workspace.self, from: data).groups.first)
+        XCTAssertEqual(group.provider, .codex)
+        XCTAssertNil(group.tabs[0].provider)
+        XCTAssertEqual(group.tabs[0].resolvedProvider(in: group), .claude)
+        XCTAssertEqual(group.tabs[0].color, TabColor.none)
+    }
+
     func testShellOverrideDoesNotInheritProjectAgent() {
         let group = TabGroup(name: "Project")
         let tab = TabItem(name: "Shell", command: "")

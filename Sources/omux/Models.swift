@@ -59,8 +59,9 @@ struct TabItem: Identifiable, Codable, Hashable {
         name = try c.decodeIfPresent(String.self, forKey: .name) ?? "Session"
         directory = try c.decodeIfPresent(String.self, forKey: .directory)
         command = try c.decodeIfPresent(String.self, forKey: .command)
-        provider = try c.decodeIfPresent(SessionProvider.self, forKey: .provider)
-        color = try c.decodeIfPresent(TabColor.self, forKey: .color) ?? .none
+        // A value from a newer version decodes as unset rather than failing the whole workspace.
+        provider = try? c.decodeIfPresent(SessionProvider.self, forKey: .provider)
+        color = (try? c.decodeIfPresent(TabColor.self, forKey: .color)) ?? .none
         claudeSessionID = try c.decodeIfPresent(UUID.self, forKey: .claudeSessionID) ?? UUID()
         codexThreadID = try c.decodeIfPresent(String.self, forKey: .codexThreadID)
         worktree = try c.decodeIfPresent(Worktree.self, forKey: .worktree)
@@ -105,7 +106,7 @@ struct TabGroup: Identifiable, Codable, Hashable {
         name = try c.decodeIfPresent(String.self, forKey: .name) ?? "Project"
         directory = try c.decodeIfPresent(String.self, forKey: .directory)
         command = try c.decodeIfPresent(String.self, forKey: .command)
-        provider = try c.decodeIfPresent(SessionProvider.self, forKey: .provider) ?? SessionProvider.infer(command: command)
+        provider = (try? c.decodeIfPresent(SessionProvider.self, forKey: .provider)) ?? SessionProvider.infer(command: command)
         isCollapsed = try c.decodeIfPresent(Bool.self, forKey: .isCollapsed) ?? false
         useWorktrees = try c.decodeIfPresent(Bool.self, forKey: .useWorktrees) ?? false
         worktreeSetup = try c.decodeIfPresent(String.self, forKey: .worktreeSetup) ?? ""

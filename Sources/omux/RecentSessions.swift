@@ -80,7 +80,8 @@ struct RecentSession: Identifiable, Hashable {
                   let handle = try? FileHandle(forReadingFrom: url) else { continue }
             let head = handle.readData(ofLength: 128 * 1024)
             try? handle.close()
-            guard let text = String(data: head, encoding: .utf8) else { continue }
+            // Lossy: the cut can split a character, which only spoils the (partial) last line.
+            let text = String(decoding: head, as: UTF8.self)
             for line in text.split(separator: "\n") {
                 guard let record = try? decoder.decode(Record.self, from: Data(line.utf8)),
                       record.type == "user",
