@@ -1,4 +1,4 @@
-// Points the Download buttons at the latest release's .zip asset and shows
+// Points the Download buttons at the latest release's .dmg (or .zip) asset and shows
 // its version. If the GitHub API can't be reached, the links keep their
 // static href (the releases/latest page) and their static label.
 (function () {
@@ -19,7 +19,10 @@
     })
     .then(function (release) {
       var assets = Array.isArray(release.assets) ? release.assets : [];
+      // Prefer the disk image; older releases only have a zip.
       var zip = assets.find(function (a) {
+        return typeof a.name === "string" && /\.dmg$/i.test(a.name);
+      }) || assets.find(function (a) {
         return typeof a.name === "string" && /\.zip$/i.test(a.name);
       });
       var version = String(release.tag_name || "").replace(/^v/, "");
@@ -34,7 +37,8 @@
       }
       if (zip && typeof zip.size === "number" && zip.size > 0) {
         var mb = (zip.size / (1024 * 1024)).toFixed(1);
-        sizes.forEach(function (el) { el.textContent = mb + " MB zip"; });
+        var kind = /\.dmg$/i.test(zip.name) ? "dmg" : "zip";
+        sizes.forEach(function (el) { el.textContent = mb + " MB " + kind; });
       }
     })
     .catch(function () {

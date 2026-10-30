@@ -59,6 +59,12 @@ open /Applications/omux.app
 
 builds and installs **omux Beta** next to the release app instead, with its own bundle id, preferences and workspace, so you can try a branch without touching your sessions. On its first launch it copies the release app's settings.
 
+```sh
+./build.sh --dist
+```
+
+builds the release that goes on GitHub: signed with the Developer ID certificate and the hardened runtime, notarized, stapled, and packaged as `build/omux-<version>.dmg` and `.zip`. It needs the notarization credentials stored once with `xcrun notarytool store-credentials omux-notary`; `--no-notarize` only signs.
+
 ## Keyboard shortcuts
 
 | Action | Shortcut |
