@@ -3,23 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>omux vs herdr: a native Mac app versus a terminal multiplexer for coding agents</title>
-  <meta name="description" content="herdr is a cross-platform terminal multiplexer for coding agents, a single Rust binary with working/blocked/idle status, detach and a socket API. omux is a native macOS app for Claude Code and Codex sessions with Allow/Deny, subagents, worktrees and resumable conversations. Honest comparison.">
+  <title>herdr alternative: omux, a native macOS app for Claude Code and Codex sessions</title>
+  <meta name="description" content="herdr alternative with a native macOS interface: omux runs Claude Code and Codex sessions in a window with status, Allow/Deny buttons, subagent transcripts, worktrees and pull request status. Where herdr&#x27;s TUI and remote machines win, and where omux is better.">
   <link rel="canonical" href="https://omux.app/herdr-alternative">
   <meta name="theme-color" content="#0F0F0F">
   <meta name="color-scheme" content="dark">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="omux">
   <meta property="og:url" content="https://omux.app/herdr-alternative">
-  <meta property="og:title" content="omux vs herdr: a native Mac app versus a terminal multiplexer for coding agents">
-  <meta property="og:description" content="herdr is a cross-platform terminal multiplexer for coding agents, a single Rust binary with working/blocked/idle status, detach and a socket API. omux is a native macOS app for Claude Code and Codex sessions with Allow/Deny, subagents, worktrees and resumable conversations. Honest comparison.">
+  <meta property="og:title" content="herdr alternative: omux, a native macOS app for Claude Code and Codex sessions">
+  <meta property="og:description" content="herdr alternative with a native macOS interface: omux runs Claude Code and Codex sessions in a window with status, Allow/Deny buttons, subagent transcripts, worktrees and pull request status. Where herdr&#x27;s TUI and remote machines win, and where omux is better.">
   <meta property="og:image" content="https://omux.app/social-preview.png">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="style.css?v=5">
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Can I run herdr inside omux?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, in a plain shell session, though you'd then have two layers doing similar jobs. Use omux's own sessions for Claude Code and Codex to get its status and permission buttons."}}, {"@type": "Question", "name": "Does omux work over SSH?", "acceptedAnswer": {"@type": "Answer", "text": "No. Sessions run locally. herdr is a better fit for remote machines."}}, {"@type": "Question", "name": "Which has fewer moving parts?", "acceptedAnswer": {"@type": "Answer", "text": "omux: it's one app with no server and no API. herdr runs a background server so terminals outlive the client."}}]}</script>
-  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "omux", "item": "https://omux.app/"}, {"@type": "ListItem", "position": 2, "name": "omux vs herdr", "item": "https://omux.app/herdr-alternative"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "omux", "item": "https://omux.app/"}, {"@type": "ListItem", "position": 2, "name": "herdr alternative", "item": "https://omux.app/herdr-alternative"}]}</script>
 </head>
 <body>
 
@@ -40,8 +40,8 @@
 
 <main class="section compare">
   <div class="container narrow">
-    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">omux</a> › omux vs herdr</nav>
-    <h1>A herdr alternative with a native macOS interface</h1>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">omux</a> › herdr alternative</nav>
+    <h1>herdr alternative with a native macOS interface</h1>
 <p class="lede">herdr is a terminal multiplexer made for coding agents: one Rust binary, a background server that keeps terminals alive, panes marked working, blocked or idle, and a socket API that lets agents spawn and wait on each other. It runs in whatever terminal you already use, on several machines at once.</p>
 <p class="lede">omux solves the same visibility problem with a window instead of a TUI. It's macOS only and has no server or API, but it shows status, permissions, subagents, diffs and pull requests for Claude Code and Codex sessions in a sidebar and panels you click. Which one fits depends on where your agents run and how you like to look at them.</p>
 
@@ -119,7 +119,7 @@
 <details><summary>Does omux work over SSH?</summary><p>No. Sessions run locally. herdr is a better fit for remote machines.</p></details>
 <details><summary>Which has fewer moving parts?</summary><p>omux: it's one app with no server and no API. herdr runs a background server so terminals outlive the client.</p></details>
 
-    <p class="muted">Also compared: <a href="/tmux-alternative">tmux</a>, <a href="/cmux-alternative">cmux</a>, <a href="/warp-alternative">Warp</a>. Facts about herdr come from its public documentation as of 2026-10-30; if something is out of date, <a href="https://github.com/onurozcan/omux/issues">open an issue</a>.</p>
+    <p class="muted">Also compared: <a href="/tmux-alternative">tmux alternative</a>, <a href="/cmux-alternative">cmux alternative</a>, <a href="/warp-alternative">Warp alternative</a>. Facts about herdr come from its public documentation as of 2026-10-30; if something is out of date, <a href="https://github.com/onurozcan/omux/issues">open an issue</a>.</p>
   </div>
 </main>
 
@@ -133,7 +133,7 @@
       <a href="https://github.com/onurozcan/omux/blob/main/LICENSE">MIT license</a>
     </nav>
     <nav class="footer-links footer-compare" aria-label="Comparisons">
-      <span class="muted">Compare:</span><a href="/tmux-alternative">omux vs tmux</a><a href="/cmux-alternative">omux vs cmux</a><a href="/warp-alternative">omux vs Warp</a>
+      <span class="muted">Compare:</span><a href="/tmux-alternative">tmux alternative</a><a href="/cmux-alternative">cmux alternative</a><a href="/warp-alternative">Warp alternative</a>
     </nav>
     <p class="fineprint">omux is an independent project, not affiliated with or endorsed by Anthropic or OpenAI. Claude and Claude Code are trademarks of Anthropic; Codex is a trademark of OpenAI. Other product names belong to their owners; comparisons reflect their public documentation as of 2026-10-30 and may be out of date.</p>
   </div>

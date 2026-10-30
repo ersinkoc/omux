@@ -28,9 +28,9 @@ PAGES = [
         "slug": "tmux-alternative",
         "other": "tmux",
         "other_url": "https://github.com/tmux/tmux",
-        "title": "omux vs tmux: a native macOS alternative for Claude Code and Codex sessions",
-        "meta": "Looking for a tmux alternative for running many Claude Code or Codex sessions? omux is a native macOS app with projects, live agent status, Allow/Deny from the sidebar, worktrees and resumable conversations. Honest comparison.",
-        "h1": "A tmux alternative for running many coding agents",
+        "title": "tmux alternative for Claude Code and Codex: omux, a native Mac app",
+        "meta": "tmux alternative for running many Claude Code and Codex sessions: omux is a native macOS app with projects, live agent status, Allow/Deny from the sidebar, worktrees and conversations that resume. Where tmux still wins, and where omux is better.",
+        "h1": "tmux alternative for running many Claude Code and Codex sessions",
         "intro": [
             "tmux is the tool most people reach for when they run several Claude Code or Codex sessions at once: one window per project, split panes, detach and come back later. It works, and it works everywhere.",
             "omux takes a different approach. It's a native macOS app built for exactly this job, so instead of remembering which pane holds which agent, you get a sidebar of projects and sessions that shows which agent is working, which one is waiting on you, and buttons to answer it. This page is a fair look at where each one fits.",
@@ -70,9 +70,9 @@ PAGES = [
         "slug": "cmux-alternative",
         "other": "cmux",
         "other_url": "https://github.com/manaflow-ai/cmux",
-        "title": "omux vs cmux: two native macOS terminals for coding agents, compared",
-        "meta": "omux and cmux are both native macOS terminals for AI coding agents. cmux is a Ghostty-based terminal with splits, SSH and a scripting API; omux is built around Claude Code and Codex sessions with status, Allow/Deny, subagents, worktrees and resumable conversations. Honest comparison.",
-        "h1": "A cmux alternative built around Claude Code and Codex",
+        "title": "cmux alternative: omux, a native Mac terminal built around Claude Code and Codex",
+        "meta": "cmux alternative for AI coding agents: omux is a native macOS app built around Claude Code and Codex, with status from the agents themselves, Allow/Deny buttons, subagents, worktrees with pull request status and conversations that resume. What cmux does better, and what omux does better.",
+        "h1": "cmux alternative built around Claude Code and Codex",
         "intro": [
             "cmux and omux want the same thing: a Mac terminal that makes running many coding agents bearable. Both are native Swift apps, both are free and open source, and both light up when an agent needs you.",
             "They differ in what they're built around. cmux is a general terminal, rendered by libghostty, with workspaces, split panes, SSH, an in-app browser with an automation API, and a CLI and socket API that scripts can drive. omux is narrower on purpose: it's a session manager for Claude Code and Codex, and it reads their own signals to show status, permissions, subagents and usage limits.",
@@ -114,9 +114,9 @@ PAGES = [
         "slug": "warp-alternative",
         "other": "Warp",
         "other_url": "https://www.warp.dev",
-        "title": "omux vs Warp: a free, local alternative for running Claude Code and Codex",
-        "meta": "Warp is an AI terminal and agent platform with its own agent, cloud runs and usage-based pricing. omux is a free native macOS app that hosts the Claude Code and Codex sessions you already pay for, with no account, no credits and no telemetry. Honest comparison.",
-        "h1": "A Warp alternative that just runs your own agents",
+        "title": "Warp alternative: omux, a free native Mac app for your own Claude Code and Codex",
+        "meta": "Warp alternative for running coding agents: omux is a free, MIT-licensed native macOS app that hosts the Claude Code and Codex sessions you already pay for, with no account, no credits and no telemetry. Where Warp is better, and where omux is.",
+        "h1": "Warp alternative: run your own Claude Code and Codex, without a platform",
         "intro": [
             "Warp has grown from a modern terminal into an agent platform: its own coding agent, cloud agents triggered from issues and Slack, factories defined as code, and pricing per agent run. If you want that whole stack, Warp is the product for it.",
             "omux is the opposite shape. It doesn't bring an agent, a cloud or a login. It's a native macOS window that runs the Claude Code and Codex sessions you already have, many at a time, and makes them easy to watch and answer. This page is for people deciding between those two shapes.",
@@ -154,9 +154,9 @@ PAGES = [
         "slug": "herdr-alternative",
         "other": "herdr",
         "other_url": "https://github.com/ogulcancelik/herdr",
-        "title": "omux vs herdr: a native Mac app versus a terminal multiplexer for coding agents",
-        "meta": "herdr is a cross-platform terminal multiplexer for coding agents, a single Rust binary with working/blocked/idle status, detach and a socket API. omux is a native macOS app for Claude Code and Codex sessions with Allow/Deny, subagents, worktrees and resumable conversations. Honest comparison.",
-        "h1": "A herdr alternative with a native macOS interface",
+        "title": "herdr alternative: omux, a native macOS app for Claude Code and Codex sessions",
+        "meta": "herdr alternative with a native macOS interface: omux runs Claude Code and Codex sessions in a window with status, Allow/Deny buttons, subagent transcripts, worktrees and pull request status. Where herdr's TUI and remote machines win, and where omux is better.",
+        "h1": "herdr alternative with a native macOS interface",
         "intro": [
             "herdr is a terminal multiplexer made for coding agents: one Rust binary, a background server that keeps terminals alive, panes marked working, blocked or idle, and a socket API that lets agents spawn and wait on each other. It runs in whatever terminal you already use, on several machines at once.",
             "omux solves the same visibility problem with a window instead of a TUI. It's macOS only and has no server or API, but it shows status, permissions, subagents, diffs and pull requests for Claude Code and Codex sessions in a sidebar and panels you click. Which one fits depends on where your agents run and how you like to look at them.",
@@ -237,7 +237,7 @@ HEADER = '''<header class="site-header">
 </header>'''
 
 def footer_html(current=None):
-    links = "".join(f'<a href="/{p["slug"]}">omux vs {esc(p["other"])}</a>' for p in PAGES if p["slug"] != current)
+    links = "".join(f'<a href="/{p["slug"]}">{esc(p["other"])} alternative</a>' for p in PAGES if p["slug"] != current)
     return f'''<footer class="site-footer">
   <div class="container">
     <nav class="footer-links" aria-label="Footer">
@@ -277,14 +277,14 @@ def page_html(p):
         {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in p["faq"]]}
     crumbs_ld = {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
         {"@type": "ListItem", "position": 1, "name": "omux", "item": BASE + "/"},
-        {"@type": "ListItem", "position": 2, "name": f"omux vs {p['other']}", "item": canonical}]}
+        {"@type": "ListItem", "position": 2, "name": f"{p['other']} alternative", "item": canonical}]}
     extra = f'  <script type="application/ld+json">{json.dumps(faq_ld)}</script>\n  <script type="application/ld+json">{json.dumps(crumbs_ld)}</script>\n'
     rows = "".join(f"<tr><th scope=\"row\">{esc(f)}</th><td>{cell(o)}</td><td>{cell(t)}</td></tr>\n" for f, o, t in p["rows"])
     intro = "".join(f"<p class=\"lede\">{esc(x)}</p>\n" for x in p["intro"])
     better_other = "".join(f"<li>{esc(x)}</li>" for x in p["better_other"])
     better_omux = "".join(f"<li>{esc(x)}</li>" for x in p["better_omux"])
     faq = "".join(f"<details><summary>{esc(q)}</summary><p>{esc(a)}</p></details>\n" for q, a in p["faq"])
-    others = ", ".join(f'<a href="/{q["slug"]}">{esc(q["other"])}</a>' for q in PAGES if q["slug"] != p["slug"])
+    others = ", ".join(f'<a href="/{q["slug"]}">{esc(q["other"])} alternative</a>' for q in PAGES if q["slug"] != p["slug"])
     return f'''{head_html(p["title"], p["meta"], canonical, extra)}
 <body>
 
@@ -292,7 +292,7 @@ def page_html(p):
 
 <main class="section compare">
   <div class="container narrow">
-    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">omux</a> › omux vs {esc(p["other"])}</nav>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">omux</a> › {esc(p["other"])} alternative</nav>
     <h1>{esc(p["h1"])}</h1>
 {intro}
     <div class="cta-row">

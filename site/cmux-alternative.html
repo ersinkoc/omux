@@ -3,23 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>omux vs cmux: two native macOS terminals for coding agents, compared</title>
-  <meta name="description" content="omux and cmux are both native macOS terminals for AI coding agents. cmux is a Ghostty-based terminal with splits, SSH and a scripting API; omux is built around Claude Code and Codex sessions with status, Allow/Deny, subagents, worktrees and resumable conversations. Honest comparison.">
+  <title>cmux alternative: omux, a native Mac terminal built around Claude Code and Codex</title>
+  <meta name="description" content="cmux alternative for AI coding agents: omux is a native macOS app built around Claude Code and Codex, with status from the agents themselves, Allow/Deny buttons, subagents, worktrees with pull request status and conversations that resume. What cmux does better, and what omux does better.">
   <link rel="canonical" href="https://omux.app/cmux-alternative">
   <meta name="theme-color" content="#0F0F0F">
   <meta name="color-scheme" content="dark">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="omux">
   <meta property="og:url" content="https://omux.app/cmux-alternative">
-  <meta property="og:title" content="omux vs cmux: two native macOS terminals for coding agents, compared">
-  <meta property="og:description" content="omux and cmux are both native macOS terminals for AI coding agents. cmux is a Ghostty-based terminal with splits, SSH and a scripting API; omux is built around Claude Code and Codex sessions with status, Allow/Deny, subagents, worktrees and resumable conversations. Honest comparison.">
+  <meta property="og:title" content="cmux alternative: omux, a native Mac terminal built around Claude Code and Codex">
+  <meta property="og:description" content="cmux alternative for AI coding agents: omux is a native macOS app built around Claude Code and Codex, with status from the agents themselves, Allow/Deny buttons, subagents, worktrees with pull request status and conversations that resume. What cmux does better, and what omux does better.">
   <meta property="og:image" content="https://omux.app/social-preview.png">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="style.css?v=5">
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Which is more mature?", "acceptedAnswer": {"@type": "Answer", "text": "cmux has a broader feature set and a larger community. omux is newer and focused; check both changelogs and pick the one whose direction matches how you work."}}, {"@type": "Question", "name": "Can omux read Ghostty themes?", "acceptedAnswer": {"@type": "Answer", "text": "No. omux has its own themes and font settings. cmux reads your Ghostty configuration."}}, {"@type": "Question", "name": "Does omux have a CLI?", "acceptedAnswer": {"@type": "Answer", "text": "Not beyond open -a omux <folder>. If you need to script your terminal, cmux is the better fit today."}}]}</script>
-  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "omux", "item": "https://omux.app/"}, {"@type": "ListItem", "position": 2, "name": "omux vs cmux", "item": "https://omux.app/cmux-alternative"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "omux", "item": "https://omux.app/"}, {"@type": "ListItem", "position": 2, "name": "cmux alternative", "item": "https://omux.app/cmux-alternative"}]}</script>
 </head>
 <body>
 
@@ -40,8 +40,8 @@
 
 <main class="section compare">
   <div class="container narrow">
-    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">omux</a> › omux vs cmux</nav>
-    <h1>A cmux alternative built around Claude Code and Codex</h1>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">omux</a> › cmux alternative</nav>
+    <h1>cmux alternative built around Claude Code and Codex</h1>
 <p class="lede">cmux and omux want the same thing: a Mac terminal that makes running many coding agents bearable. Both are native Swift apps, both are free and open source, and both light up when an agent needs you.</p>
 <p class="lede">They differ in what they're built around. cmux is a general terminal, rendered by libghostty, with workspaces, split panes, SSH, an in-app browser with an automation API, and a CLI and socket API that scripts can drive. omux is narrower on purpose: it's a session manager for Claude Code and Codex, and it reads their own signals to show status, permissions, subagents and usage limits.</p>
 
@@ -121,7 +121,7 @@
 <details><summary>Can omux read Ghostty themes?</summary><p>No. omux has its own themes and font settings. cmux reads your Ghostty configuration.</p></details>
 <details><summary>Does omux have a CLI?</summary><p>Not beyond open -a omux &lt;folder&gt;. If you need to script your terminal, cmux is the better fit today.</p></details>
 
-    <p class="muted">Also compared: <a href="/tmux-alternative">tmux</a>, <a href="/warp-alternative">Warp</a>, <a href="/herdr-alternative">herdr</a>. Facts about cmux come from its public documentation as of 2026-10-30; if something is out of date, <a href="https://github.com/onurozcan/omux/issues">open an issue</a>.</p>
+    <p class="muted">Also compared: <a href="/tmux-alternative">tmux alternative</a>, <a href="/warp-alternative">Warp alternative</a>, <a href="/herdr-alternative">herdr alternative</a>. Facts about cmux come from its public documentation as of 2026-10-30; if something is out of date, <a href="https://github.com/onurozcan/omux/issues">open an issue</a>.</p>
   </div>
 </main>
 
@@ -135,7 +135,7 @@
       <a href="https://github.com/onurozcan/omux/blob/main/LICENSE">MIT license</a>
     </nav>
     <nav class="footer-links footer-compare" aria-label="Comparisons">
-      <span class="muted">Compare:</span><a href="/tmux-alternative">omux vs tmux</a><a href="/warp-alternative">omux vs Warp</a><a href="/herdr-alternative">omux vs herdr</a>
+      <span class="muted">Compare:</span><a href="/tmux-alternative">tmux alternative</a><a href="/warp-alternative">Warp alternative</a><a href="/herdr-alternative">herdr alternative</a>
     </nav>
     <p class="fineprint">omux is an independent project, not affiliated with or endorsed by Anthropic or OpenAI. Claude and Claude Code are trademarks of Anthropic; Codex is a trademark of OpenAI. Other product names belong to their owners; comparisons reflect their public documentation as of 2026-10-30 and may be out of date.</p>
   </div>
