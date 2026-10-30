@@ -192,7 +192,7 @@ final class TermView: LocalProcessTerminalView {
     /// Paths the way a shell, Claude Code and Codex read them: spaces and specials escaped.
     nonisolated static func shellEscaped(_ urls: [URL]) -> String {
         urls.map { url in
-            url.path.map { ch in " '\"()[]{}&;|<>$`\\*?#~".contains(ch) ? "\\\(ch)" : String(ch) }.joined()
+            url.path.map { ch in " '\"()[]{}&;|<>$`\\*?#~!".contains(ch) ? "\\\(ch)" : String(ch) }.joined()
         }.joined(separator: " ")
     }
 
