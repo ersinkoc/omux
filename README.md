@@ -30,7 +30,7 @@ Built with SwiftUI and [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm).
 
 ## Requirements
 
-- macOS 14 or later
+- A Mac with Apple Silicon running macOS 14 or later
 - Swift 5.9 or later (Xcode 15+ or the Command Line Tools)
 - [Claude Code](https://claude.com/claude-code) installed as `claude` for Claude sessions; plain shell sessions work without it
 - Codex CLI **0.165.0 or later** installed as `codex` for managed Codex sessions. Tested with 0.166.0; the app-server integration is experimental on the Codex side.

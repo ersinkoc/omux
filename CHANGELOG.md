@@ -6,7 +6,13 @@ All notable changes to omux are listed here. Versions follow [Semantic Versionin
 
 ### Added
 
-- **Drop images into a session from any app.** Dropping image data, or a file promise as Photos and browsers send, saves the image and pastes its path, which Claude Code and Codex read as an attachment. Until now only files could be dropped.
+- **Drop images into a session from any app.** Dropping image data, or a file promise as Photos and browsers send, saves the image and pastes its path, which Claude Code and Codex read as an attachment. Until now only files could be dropped. ([#8](https://github.com/onurozcan/omux/pull/8))
+
+### Fixed
+
+- A value from a newer version in `workspace.json`, such as an unknown session provider or color, made the whole workspace fail to load and get overwritten with an empty one. Unknown values now decode as unset. Recent conversations with non-ASCII text near the 128 KB read limit no longer go missing from the list. ([#12](https://github.com/onurozcan/omux/pull/12))
+- A commit hook that printed more than 64 KB to stderr froze omux for good. Diffs for a file that changed between a symlink and a regular file showed a second file header as content. Session names with `..` or `//` produced branch names git rejects. ([#9](https://github.com/onurozcan/omux/pull/9))
+- Option typed the Meta prefix instead of the keyboard layout's character, so ⌥Q on a Turkish layout didn't give "@". Option now composes the layout's character and stays Meta only on keys without one: arrows, ⌥⏎, ⌥⌫, Escape and Tab. ([#11](https://github.com/onurozcan/omux/pull/11))
 
 ## [0.6.0] - 2026-10-30
 
