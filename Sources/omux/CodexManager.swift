@@ -257,7 +257,8 @@ final class CodexManager: ObservableObject {
             for key in ["primary", "secondary"] {
                 if let update = bucket[key] as? [String: Any] {
                     let previous = quotaBucket[key] as? [String: Any] ?? [:]
-                    quotaBucket[key] = previous.merging(update) { _, new in new }
+                    // Sparse: a null field is unknown in this update and doesn't clear what we had.
+                    quotaBucket[key] = previous.merging(update.filter { !($0.value is NSNull) }) { _, new in new }
                 }
             }
         }
