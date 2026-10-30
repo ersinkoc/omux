@@ -216,10 +216,16 @@ final class TermView: LocalProcessTerminalView {
     /// Types text into the session as a paste, so newlines don't submit it early.
     func paste(_ text: String) {
         if terminalInputStateSnapshot()?.bracketedPasteMode == true {
-            send(txt: "\u{1b}[200~" + text + "\u{1b}[201~")
+            send(txt: Self.bracketedPaste(text))
         } else {
             send(txt: text)
         }
+    }
+
+    /// Without ESC, text from a file name or a log can't end the paste with its own
+    /// ESC[201~ and have the lines after it typed and submitted.
+    nonisolated static func bracketedPaste(_ text: String) -> String {
+        "\u{1b}[200~" + text.replacingOccurrences(of: "\u{1b}", with: "") + "\u{1b}[201~"
     }
 
     /// The main buffer's text, scrollback included. Read it here on the main actor;
