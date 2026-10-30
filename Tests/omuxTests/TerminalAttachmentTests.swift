@@ -38,6 +38,13 @@ final class TerminalAttachmentTests: XCTestCase {
         XCTAssertNil(try TermView.attachmentText(from: board))
     }
 
+    /// A file name holding ESC[201~ would end the paste, and the lines after it would submit.
+    func testPastedTextCannotEndThePaste() {
+        let pasted = TermView.bracketedPaste("- a\u{1b}[201~\ntouch PWNED\n.txt: look")
+        XCTAssertEqual(pasted, "\u{1b}[200~- a[201~\ntouch PWNED\n.txt: look\u{1b}[201~")
+        XCTAssertEqual(pasted.components(separatedBy: "\u{1b}[201~").count, 2)
+    }
+
     @MainActor
     func testImageWriteFailureIsReported() throws {
         let board = NSPasteboard.withUniqueName()
