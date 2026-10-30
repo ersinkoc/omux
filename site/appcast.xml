@@ -1,0 +1,23 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>omux</title>
+        <item>
+            <title>0.6.0</title>
+            <pubDate>Fri, 30 Oct 2026 13:11:09 +0300</pubDate>
+            <link>https://omux.app</link>
+            <sparkle:version>7</sparkle:version>
+            <sparkle:shortVersionString>0.6.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<html><body style="font: 13px -apple-system, sans-serif">
+<h3>Added</h3>
+<ul>
+<li><strong>Updates.</strong> omux checks for new versions about once a day with <a href="https://sparkle-project.org">Sparkle</a> and offers to install them; Help › Check for Updates… checks now. Updates are signed and must pass notarization before they're installed.</li>
+</ul>
+</body></html>
+]]></description>
+            <enclosure url="https://github.com/onurozcan/omux/releases/download/v0.6.0/omux-0.6.0.zip" length="4681904" type="application/octet-stream" sparkle:edSignature="xoRtFv73amEN3nuarNH4mCUDTxYKmrKQsrfcFC3ZEfdbjWAILcU2tS7byR7lLZCpBrEg8JQaG8hCKCayG0SPAA=="/>
+        </item>
+    </channel>
+</rss>
