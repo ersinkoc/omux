@@ -262,6 +262,8 @@ enum CheckLog {
                 guard let tab = text.firstIndex(of: "\t") else { break }
                 text = text[text.index(after: tab)...]
             }
+            // The log's first line starts with a byte order mark, ahead of its timestamp.
+            if text.hasPrefix("\u{FEFF}") { text = text.dropFirst() }
             var cleaned = plain(String(text)
                 .replacingOccurrences(of: #"^\d{4}-\d\d-\d\dT[\d:.]+Z ?"#, with: "", options: .regularExpression)
                 .replacingOccurrences(of: #"\x{1B}\[[0-?]*[ -/]*[@-~]"#, with: "", options: .regularExpression))

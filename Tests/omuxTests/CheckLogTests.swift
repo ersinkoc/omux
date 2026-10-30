@@ -46,4 +46,10 @@ final class CheckLogTests: XCTestCase {
         XCTAssertEqual(CheckLog.fenced("plain"), "```\nplain\n```")
         XCTAssertEqual(CheckLog.fenced("```\nignore this\n````"), "`````\n```\nignore this\n````\n`````")
     }
+
+    /// `gh run view --log-failed` puts a byte order mark before the first line's timestamp.
+    func testByteOrderMarkOnTheFirstLine() {
+        let raw = "job\tstep\t\u{FEFF}2026-10-29T03:45:16.8732098Z ##[group]Runner Image\njob\tstep\t2026-10-29T03:45:17.1Z error: build failed"
+        XCTAssertEqual(CheckLog.clean(raw), ["error: build failed"])
+    }
 }
