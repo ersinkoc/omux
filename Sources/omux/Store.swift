@@ -327,6 +327,11 @@ final class Store: ObservableObject {
         }
     }
 
+    /// Whether the program in the session takes a paste as one block, without acting on its newlines.
+    func acceptsBracketedPaste(_ id: UUID) -> Bool {
+        terminals[id]?.terminalInputStateSnapshot()?.bracketedPasteMode == true
+    }
+
     /// Answers Claude Code's permission prompt: Return picks its default "Yes",
     /// Escape is its "No, and tell Claude what to do differently".
     func answerPermission(_ id: UUID, allow: Bool) {
