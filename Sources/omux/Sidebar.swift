@@ -36,7 +36,7 @@ struct Sidebar: View {
                 Button { store.openFolderPanel() } label: { Image(systemName: "folder.badge.plus") }
                     .help("Open folder as a project (⌘O)")
                 Button { store.showRecentSessions = true } label: { Image(systemName: "clock.arrow.circlepath") }
-                    .help("Open recent agent session (⇧⌘O)")
+                    .help("Open recent conversation (⇧⌘O)")
                 SettingsLink { Image(systemName: "gearshape") }
                     .help("Settings (⌘,)")
             }
@@ -72,7 +72,7 @@ struct Sidebar: View {
             // Empty-space menu; rows and project headers override it with their own.
             Button("New Project") { store.newGroup() }
             Button("Open Folder as Project…") { store.openFolderPanel() }
-            Button("Open Recent Agent Session…") { store.showRecentSessions = true }
+            Button("Open Recent Conversation…") { store.showRecentSessions = true }
             Button("New Codex Session") { store.newTab(command: "codex") }
             Divider()
             Button("New Session") { store.newTab() }
@@ -119,10 +119,7 @@ struct TabRow: View {
                 if store.renamingID == tab.id {
                     RenameField(initial: tab.name) { store.rename(tab.id, to: $0) }
                 } else {
-                    HStack(spacing: 5) {
-                        Text(tab.name).lineLimit(1)
-                        Text(store.provider(of: tab).label).font(.caption2).foregroundStyle(.tertiary)
-                    }
+                    Text(tab.name).lineLimit(1)
                 }
                 if let worktree = tab.worktree {
                     HStack(spacing: 3) {

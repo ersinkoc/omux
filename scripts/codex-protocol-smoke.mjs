@@ -189,5 +189,5 @@ supports_websockets = false
     await Promise.race([new Promise(r=>child.once('exit',r)),delay(2000)]);
   }
   await new Promise(resolve=>model.close(resolve));
-  rmSync(home,{recursive:true,force:true});
+  rmSync(home,{recursive:true,force:true,maxRetries:10,retryDelay:200});
 }

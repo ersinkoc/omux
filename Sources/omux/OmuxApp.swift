@@ -145,7 +145,6 @@ struct ContentView: View {
                         .frame(minWidth: 260, idealWidth: 380, maxWidth: 900)
                 }
             }
-            .ignoresSafeArea(.container, edges: .top)
         }
         // Hiding the toolbar itself also hides the window buttons on some macOS versions.
         .toolbarBackground(.hidden, for: .windowToolbar)
@@ -184,7 +183,9 @@ struct SessionHeader: View {
                 Text(tab.name)
                     .font(.system(size: 11, weight: .semibold))
                     .lineLimit(1)
-                Text(store.provider(of: tab).label).font(.caption2).foregroundStyle(.tertiary)
+                if [.claude, .codex].contains(store.provider(of: tab)) {
+                    Text(store.provider(of: tab).label).font(.caption2).foregroundStyle(.tertiary)
+                }
                 if let line = rt.statusLine(showFolder: false) {
                     Text(line)
                         .font(.caption2)
@@ -248,7 +249,7 @@ struct AppCommands: Commands {
             Button("New Project") { store.newGroup() }.keyboardShortcut("n", modifiers: [.command, .shift])
             Divider()
             Button("Open Folder…") { store.openFolderPanel() }.keyboardShortcut("o")
-            Button("Open Recent Agent Session…") { store.showRecentSessions = true }
+            Button("Open Recent Conversation…") { store.showRecentSessions = true }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
         }
         CommandGroup(replacing: .saveItem) {

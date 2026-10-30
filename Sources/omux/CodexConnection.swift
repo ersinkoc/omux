@@ -122,7 +122,7 @@ final class CodexConnection {
                     self.close(notify: true)
                 }
             }
-            _ = try await self.request("initialize", params: ["clientInfo": ["name": "omux", "title": "omux", "version": "0.3.0"]])
+            _ = try await self.request("initialize", params: ["clientInfo": ["name": "omux", "title": "omux", "version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"]])
             try await send(["method": "initialized"])
             isReady = true
         } catch {

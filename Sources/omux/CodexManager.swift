@@ -53,6 +53,8 @@ final class CodexManager: ObservableObject {
     @Published private(set) var answering: Set<CodexApproval> = []
     @Published private(set) var limits: [UsageMonitor.Limit] = []
     @Published private(set) var usageError: String?
+    /// The account's plan, like "free" or "plus", from the last usage read.
+    @Published private(set) var plan: String?
     @Published private(set) var agents: [UUID: [CodexAgent]] = [:]
     private var agentOwners: [String: UUID] = [:]
     private var threads: [UUID: String] = [:]
@@ -224,7 +226,13 @@ final class CodexManager: ObservableObject {
         refreshingUsage = true
         defer { refreshingUsage = false }
         do {
-            let result = try await connection.request("account/rateLimits/read")
+            // A stale login makes the usage request fail with a 401; say so instead.
+            let account = try await connection.request("account/read", params: ["refreshToken": true])
+            guard account["account"] is [String: Any] else {
+                quotaBucket = [:]; limits = []; usageError = "Codex isn't signed in: run codex login"
+                return
+            }
+            let result = try await connection.request("account/rateLimits/read", params: ["excludeResetCreditDetails": true])
             applyLimits(result, replace: true)
         } catch {
             quotaBucket = [:]; limits = []; usageError = "Codex usage unavailable"
@@ -234,6 +242,7 @@ final class CodexManager: ObservableObject {
     private func applyLimits(_ result: [String: Any], replace: Bool = false) {
         if replace { quotaBucket = [:] }
         if let bucket = result["rateLimits"] as? [String: Any] {
+            if let planType = bucket["planType"] as? String, planType != "unknown" { plan = planType }
             for key in ["primary", "secondary"] {
                 if let update = bucket[key] as? [String: Any] {
                     let previous = quotaBucket[key] as? [String: Any] ?? [:]

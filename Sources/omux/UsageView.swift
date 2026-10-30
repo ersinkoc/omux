@@ -9,16 +9,18 @@ struct UsageView: View {
     @State private var hovered: String?
     @AppStorage(Prefs.usageInterval) private var usageInterval = 300.0
 
+    /// Codex sessions show Codex's limits; every other session shows Claude's, as before.
     private var isCodex: Bool { store.selectedProvider == .codex }
-    private var limits: [UsageMonitor.Limit] {
-        isCodex ? codex.limits : store.selectedProvider == .claude ? monitor.limits : []
-    }
+    private var limits: [UsageMonitor.Limit] { isCodex ? codex.limits : monitor.limits }
 
     var body: some View {
         HStack(spacing: 10) {
-            Text(store.selectedProvider.label).font(.caption2).foregroundStyle(.tertiary)
+            if isCodex {
+                Text(codex.plan.map { "Codex \($0.replacingOccurrences(of: "_", with: " ").capitalized)" } ?? "Codex")
+                    .font(.caption2).foregroundStyle(.tertiary)
+            }
             if limits.isEmpty {
-                Text(isCodex ? codex.usageError ?? "Start a Codex session to see usage" : store.selectedProvider == .claude ? monitor.error ?? "Claude usage…" : "")
+                Text(isCodex ? codex.usageError ?? "Codex usage…" : monitor.error ?? "Claude usage…")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -45,21 +47,15 @@ struct UsageView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .onAppear { refreshProvider() }
+        .onAppear { monitor.start() }
         .onDisappear { monitor.stop() }
-        .onChange(of: usageInterval) { _, seconds in
-            if store.selectedProvider == .claude { monitor.schedule(every: seconds) }
+        .onChange(of: usageInterval) { _, seconds in monitor.schedule(every: seconds) }
+        .task(id: isCodex) {
+            guard isCodex else { return }
+            while !Task.isCancelled {
+                await codex.refreshUsage()
+                try? await Task.sleep(for: .seconds(max(usageInterval, 30)))
+            }
         }
-        .onChange(of: store.selectedProvider) { _, _ in refreshProvider() }
-        .onReceive(Timer.publish(every: usageInterval, on: .main, in: .common).autoconnect()) { _ in
-            if isCodex { Task { await codex.refreshUsage() } }
-        }
-    }
-
-    private func refreshProvider() {
-        if store.selectedProvider != .claude {
-            monitor.stop()
-            if isCodex { Task { await codex.refreshUsage() } }
-        } else { monitor.start() }
     }
 }
