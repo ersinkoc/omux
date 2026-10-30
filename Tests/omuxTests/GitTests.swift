@@ -46,4 +46,35 @@ final class GitTests: XCTestCase {
         XCTAssertEqual(Git.slug("docs //notes"), "docs-/notes")
         XCTAssertEqual(Git.slug("foo /.hidden"), "foo-/hidden")
     }
+
+    private func repoWithUnmergedBranch() throws -> String {
+        let repo = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).resolvingSymlinksInPath().path
+        try FileManager.default.createDirectory(atPath: repo, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(atPath: repo); try? FileManager.default.removeItem(atPath: repo + ".worktrees") }
+        func git(_ args: [String]) { XCTAssertTrue(Git.run(["-c", "user.name=t", "-c", "user.email=t@t"] + args, in: repo).ok) }
+        git(["init", "-q", "-b", "main"])
+        git(["commit", "-q", "--allow-empty", "-m", "first"])
+        git(["branch", "victim"])
+        git(["commit", "-q", "--allow-empty", "-m", "second"])
+        return repo
+    }
+
+    /// git runs `git branch <branch> <base>` for `worktree add -b`: "-D victim" deleted the base.
+    func testOptionLikeBranchNamesAreRejected() throws {
+        let repo = try repoWithUnmergedBranch()
+        let victim = Git.run(["rev-parse", "victim"], in: repo).out
+        for branch in ["-D", "-f", "a..b"] {
+            XCTAssertFalse(Git.addWorktree(repo: repo, branch: branch, base: "victim").ok, branch)
+        }
+        XCTAssertEqual(Git.branches(repo).sorted(), ["main", "victim"])
+        XCTAssertEqual(Git.run(["rev-parse", "victim"], in: repo).out, victim)
+    }
+
+    /// "feat/x" and "feat-x" share a folder; the second used to fail after creating its branch.
+    func testWorktreeFolderClashLeavesNoBranch() throws {
+        let repo = try repoWithUnmergedBranch()
+        XCTAssertTrue(Git.addWorktree(repo: repo, branch: "feat/x", base: "main").ok)
+        XCTAssertFalse(Git.addWorktree(repo: repo, branch: "feat-x", base: "main").ok)
+        XCTAssertFalse(Git.branches(repo).contains("feat-x"))
+    }
 }
