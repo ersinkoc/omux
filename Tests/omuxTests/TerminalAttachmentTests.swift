@@ -1,0 +1,59 @@
+import AppKit
+import XCTest
+@testable import omux
+
+final class TerminalAttachmentTests: XCTestCase {
+    @MainActor
+    func testScreenshotPasteAndDropPreserveSeparateImages() throws {
+        let board = NSPasteboard.withUniqueName()
+        defer { board.releaseGlobally() }
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 2, pixelsHigh: 2,
+                                      bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                                      isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+        board.setData(try XCTUnwrap(bitmap.representation(using: .png, properties: [:])), forType: .png)
+        let first = try XCTUnwrap(TermView.attachmentText(from: board, directory: directory))
+        let second = try XCTUnwrap(TermView.attachmentText(from: board, preferText: false, directory: directory))
+        XCTAssertNotEqual(first, second)
+        let files = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+        XCTAssertEqual(files.count, 2)
+        for file in files { XCTAssertNotNil(NSImage(contentsOf: file)) }
+
+        board.setString("Copied caption", forType: .string)
+        XCTAssertNil(try TermView.attachmentText(from: board, directory: directory))
+        XCTAssertNotNil(try TermView.attachmentText(from: board, preferText: false, directory: directory))
+    }
+
+    @MainActor
+    func testFilePathsAndPlainText() throws {
+        let board = NSPasteboard.withUniqueName()
+        defer { board.releaseGlobally() }
+        board.writeObjects([NSURL(fileURLWithPath: "/tmp/screen shot.png")])
+        XCTAssertEqual(try TermView.attachmentText(from: board), "/tmp/screen\\ shot.png ")
+        board.clearContents()
+        board.setString("hello", forType: .string)
+        XCTAssertNil(try TermView.attachmentText(from: board))
+    }
+
+    @MainActor
+    func testImageWriteFailureIsReported() throws {
+        let board = NSPasteboard.withUniqueName()
+        defer { board.releaseGlobally() }
+        let image = NSImage(size: NSSize(width: 2, height: 2))
+        image.lockFocus()
+        NSColor.red.setFill()
+        NSRect(x: 0, y: 0, width: 2, height: 2).fill()
+        image.unlockFocus()
+        board.writeObjects([image])
+        XCTAssertThrowsError(try TermView.attachmentText(from: board, directory: URL(fileURLWithPath: "/dev/null/images")))
+    }
+
+    @MainActor
+    func testDropAcceptsPromisedFiles() {
+        let view = TermView(tabID: UUID())
+        for type in NSFilePromiseReceiver.readableDraggedTypes {
+            XCTAssertTrue(view.registeredDraggedTypes.contains(NSPasteboard.PasteboardType(type)))
+        }
+    }
+}

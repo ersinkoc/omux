@@ -2,6 +2,12 @@
 
 All notable changes to omux are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+
+- **Drop images into a session from any app.** Dropping image data, or a file promise as Photos and browsers send, saves the image and pastes its path, which Claude Code and Codex read as an attachment. Until now only files could be dropped.
+
 ## [0.6.0] - 2026-10-30
 
 ### Added
