@@ -191,12 +191,16 @@ struct ContentView: View {
             HSplitView {
                 VStack(spacing: 0) {
                     SessionHeader(theme: theme, showFiles: $showFiles)
-                    if let id = store.selectedTabID, let term = store.terminal(for: id) {
-                        TerminalHost(termView: term, theme: theme)
-                    } else {
-                        ContentUnavailableView("No session", systemImage: "terminal", description: Text("Press ⌘T to start one."))
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .background(Color(nsColor: theme.background))
+                    // Over the terminal, so a notice doesn't resize the session.
+                    ZStack(alignment: .top) {
+                        if let id = store.selectedTabID, let term = store.terminal(for: id) {
+                            TerminalHost(termView: term, theme: theme)
+                        } else {
+                            ContentUnavailableView("No session", systemImage: "terminal", description: Text("Press ⌘T to start one."))
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .background(Color(nsColor: theme.background))
+                        }
+                        NoticeStack(theme: theme)
                     }
                 }
                 .frame(minWidth: 360)

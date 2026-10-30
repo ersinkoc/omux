@@ -175,18 +175,11 @@ extension Store {
     }
 
     static func showError(_ title: String, _ detail: String) {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = title
-        alert.informativeText = detail
-        alert.runModal()
+        Notices.shared.post(title, detail: detail, isError: true)
     }
 
     static func showInfo(_ title: String, _ detail: String) {
-        let alert = NSAlert()
-        alert.messageText = title
-        alert.informativeText = detail
-        alert.runModal()
+        Notices.shared.post(title, detail: detail, isError: false)
     }
 }
 
