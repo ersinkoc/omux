@@ -27,6 +27,8 @@ final class Changes: ObservableObject {
     private var worktree: Worktree?
     private var base: String?
     private var watcher: FolderWatcher?
+    /// Commits and resets touch only HEAD and the index, which can be outside `dir`.
+    private var gitWatcher: FolderWatcher?
     private var refreshing = false
     private var again = false
 
@@ -44,22 +46,31 @@ final class Changes: ObservableObject {
         files = []
         base = nil
         watcher = nil
+        gitWatcher = nil
         isRepo = false
         baseName = worktree?.base ?? "HEAD"
-        guard let dir else { return }
+        if let dir { detectRepo(dir) }
+    }
+
+    private func detectRepo(_ dir: String) {
         Task.detached {
             let inRepo = Git.topLevel(dir) != nil
+            let gitDir = inRepo ? Git.gitDirectory(dir) : nil
             await MainActor.run {
-                guard self.dir == dir, inRepo else { return }
+                guard self.dir == dir, inRepo, !self.isRepo else { return }
                 self.isRepo = true
                 self.watcher = FolderWatcher(path: dir) { [weak self] in self?.refresh() }
+                if let gitDir, !gitDir.hasPrefix(dir + "/") {
+                    self.gitWatcher = FolderWatcher(path: gitDir) { [weak self] in self?.refresh() }
+                }
                 self.refresh()
             }
         }
     }
 
     func refresh() {
-        guard let dir, isRepo else { return }
+        guard let dir else { return }
+        guard isRepo else { detectRepo(dir); return }
         if refreshing { again = true; return }
         refreshing = true
         let worktree = self.worktree
@@ -157,6 +168,13 @@ struct ChangesPanel: View {
         .onChange(of: changes.files) { _, _ in pickFile(); reload() }
         .onChange(of: selected) { _, _ in editing = nil; reload() }
         .onChange(of: changes.tabID) { _, _ in selected = nil; editing = nil; pickFile() }
+        // Folders outside a repo aren't watched, but a session can run git init in one.
+        .task(id: changes.isRepo) {
+            while !changes.isRepo, !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(3))
+                changes.refresh()
+            }
+        }
     }
 
     private func placeholder(_ title: String, _ detail: String) -> some View {

@@ -79,6 +79,13 @@ enum Git {
         return r.ok ? r.out.trimmingCharacters(in: .whitespacesAndNewlines) : nil
     }
 
+    /// The folder with this checkout's HEAD and index. A linked worktree's is under the
+    /// main repository's .git, and a subfolder's is above it, so neither is inside `dir`.
+    static func gitDirectory(_ dir: String) -> String? {
+        let r = run(["rev-parse", "--absolute-git-dir"], in: dir)
+        return r.ok ? r.out.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+    }
+
     static func currentBranch(_ dir: String) -> String? {
         let r = run(["symbolic-ref", "--quiet", "--short", "HEAD"], in: dir)
         return r.ok ? r.out.trimmingCharacters(in: .whitespacesAndNewlines) : nil
