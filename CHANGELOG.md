@@ -2,6 +2,12 @@
 
 All notable changes to omux are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Fixed
+
+- Option typed the Meta prefix instead of the keyboard layout's character, so ⌥Q on a Turkish layout didn't give "@". Option now composes the layout's character and stays Meta only on keys without one: arrows, ⌥⏎, ⌥⌫, Escape and Tab.
+
 ## [0.6.0] - 2026-10-30
 
 ### Added
