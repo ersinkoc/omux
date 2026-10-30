@@ -17,6 +17,8 @@ final class BrowserSession: NSObject, ObservableObject, WKNavigationDelegate, WK
     /// A short confirmation after an element was sent to the prompt.
     @Published var notice: String?
     private var observations: [NSKeyValueObservation] = []
+    /// The address whose load failed, for Try Again: WebKit puts its url back to the last page.
+    private var failedURL: URL?
 
     init(tabID: UUID) {
         self.tabID = tabID
@@ -54,7 +56,9 @@ final class BrowserSession: NSObject, ObservableObject, WKNavigationDelegate, WK
     }
 
     func reload() {
-        if currentURL == nil { load(address) } else { webView.reload() }
+        if error != nil, let failedURL {
+            load(failedURL.absoluteString)
+        } else if currentURL == nil { load(address) } else { webView.reload() }
     }
 
     func close() {
@@ -133,7 +137,8 @@ final class BrowserSession: NSObject, ObservableObject, WKNavigationDelegate, WK
 
     nonisolated func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         let message = error.localizedDescription
-        DispatchQueue.main.async { self.error = message }
+        let failed = (error as NSError).userInfo[NSURLErrorFailingURLErrorKey] as? URL
+        DispatchQueue.main.async { self.error = message; self.failedURL = failed }
     }
 
     nonisolated func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
