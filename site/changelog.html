@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Changelog – omux</title>
+  <meta name="description" content="What changed in each omux release.">
+  <link rel="canonical" href="https://omux.app/changelog">
+  <meta name="theme-color" content="#0F0F0F">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="omux">
+  <meta property="og:url" content="https://omux.app/changelog">
+  <meta property="og:title" content="omux changelog">
+  <meta property="og:description" content="What changed in each omux release.">
+  <meta property="og:image" content="https://omux.app/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css?v=3">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-row">
+    <a class="brand" href="/" aria-label="omux home">
+      <img src="favicon.svg" alt="" width="28" height="28">
+      <span>omux</span>
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="/#features">Features</a>
+      <a href="/#install">Install</a>
+      <a href="https://github.com/onurozcan/omux">GitHub</a>
+      <a class="btn btn-small btn-primary" href="https://github.com/onurozcan/omux/releases/latest" data-download>Download</a>
+    </nav>
+  </div>
+</header>
+
+<main class="section">
+  <div class="container changelog">
+    <h1>Changelog</h1>
+    <p class="lede muted">What changed in each release, newest first. Versions follow <a href="https://semver.org">semantic versioning</a>; the source is <a href="https://github.com/onurozcan/omux/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
+<div class="timeline">
+<article class="release" id="v0.5.0">
+  <div class="release-rail"><span class="node"></span></div>
+  <div class="release-meta">
+    <h2><a href="#v0.5.0">0.5.0</a></h2>
+    <span class="badge badge-latest">Latest</span>
+    <p><time datetime="2026-10-30">October 30, 2026</time></p>
+    <p><a href="https://github.com/onurozcan/omux/releases/tag/v0.5.0">Release on GitHub</a></p>
+  </div>
+  <div class="release-body">
+<ul class="entries">
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Worktree setup.</strong> A project can have a setup command that runs in each new worktree before the session starts, such as <code>cp "$OMUX_REPO/.env" . &amp;&amp; npm install</code>, so the files Git ignores and the dependencies are in place before Claude begins. The session's command only starts if setup succeeds. Set it in the New Session in Worktree sheet or in Edit Project. <code>$OMUX_REPO</code> points to the main checkout in every worktree session. (<a href="https://github.com/onurozcan/omux/pull/5">#5</a>)</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Welcome sheet</strong> on first launch, and under Help › Welcome to omux: checks that Claude Code and Codex are installed, turns on notifications, checks the usage limits with an explanation of what they need, and opens a first project.</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Paste images and drop files into a session.</strong> ⌘V with an image on the clipboard saves it and pastes its path, which Claude Code and Codex read as an attachment; ⌘V with files, or dropping files on the terminal, pastes their paths.</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Notification style and sound.</strong> Settings › Notifications can play a sound without a banner, and pick which macOS sound.</div></li>
+<li class="entry"><span class="chip chip-changed">Changed</span><div class="entry-text">The usage bar says what's wrong when it can't show limits (no Claude login, API key login, Keychain access denied, login expired) and clicking it retries. The old text was "Not signed in to Claude Code" for all of them.</div></li>
+</ul>
+  </div>
+</article>
+<article class="release" id="v0.4.0">
+  <div class="release-rail"><span class="node"></span></div>
+  <div class="release-meta">
+    <h2><a href="#v0.4.0">0.4.0</a></h2>
+    
+    <p><time datetime="2026-10-30">October 30, 2026</time></p>
+    <p><a href="https://github.com/onurozcan/omux/releases/tag/v0.4.0">Release on GitHub</a></p>
+  </div>
+  <div class="release-body">
+<ul class="entries">
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Codex sessions.</strong> A project or session can run <a href="https://developers.openai.com/codex/cli">Codex</a> instead of Claude Code: pick the agent in the project or session settings, in the worktree sheet, or with File › New Codex Session. omux starts a private Codex app-server per session, so a Codex session keeps its conversation across relaunches, shows its status, Allow/Deny for command and file-change approvals, its subagents and their transcripts, recent Codex conversations (⇧⌘O) and Codex usage limits. Needs Codex CLI 0.165 or later as <code>codex</code>. (<a href="https://github.com/onurozcan/omux/pull/7">#7</a>)</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Beta builds.</strong> <code>./build.sh --beta</code> installs "omux Beta" next to the release app, with its own preferences and workspace, for trying a branch. It starts with the release app's settings.</div></li>
+<li class="entry"><span class="chip chip-changed">Changed</span><div class="entry-text">Pressing ▶ on a Claude session that has no conversation yet starts one pinned to the session's id, instead of continuing the folder's most recent conversation.</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">The sidebar's new session, open folder, recent conversations and settings buttons didn't respond to clicks: the session list extended up under them.</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">The session header and the right panel's tabs sat below the title bar instead of level with the sidebar's buttons.</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">0.3.0 kept an invisible window toolbar so the window buttons show on every macOS version, which pushed the content down. The toolbar is hidden again and the buttons are kept visible directly.</div></li>
+</ul>
+  </div>
+</article>
+<article class="release" id="v0.3.0">
+  <div class="release-rail"><span class="node"></span></div>
+  <div class="release-meta">
+    <h2><a href="#v0.3.0">0.3.0</a></h2>
+    
+    <p><time datetime="2026-10-29">October 29, 2026</time></p>
+    <p><a href="https://github.com/onurozcan/omux/releases/tag/v0.3.0">Release on GitHub</a></p>
+  </div>
+  <div class="release-body">
+<ul class="entries">
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Pull request status</strong> for worktree sessions, through the GitHub CLI. The sidebar and header show the pull request's number and state (checks running or failing, changes requested, approved, merged), the header chip lists each check, and the session asks for your attention when checks fail, a review arrives or the pull request is merged. Without <code>gh</code>, nothing changes. (<a href="https://github.com/onurozcan/omux/pull/2">#2</a>)</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Clean up merged worktrees.</strong> When a worktree session's pull request is merged, the sidebar, the session menu and the pull request chip offer to close the session and delete its worktree and branch. Closing a merged session says so instead of listing commits that a squash merge leaves behind. (<a href="https://github.com/onurozcan/omux/pull/3">#3</a>)</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Notifications.</strong> A macOS notification when a session you aren't looking at needs you, such as a tool permission. Clicking it opens the session. Optional notifications when a session finishes, and for notifications programs send with OSC 9 or OSC 777, such as Claude Code's (and its plugins') when its notification channel is <code>ghostty</code> or <code>iterm2</code>. Each kind can be turned off in Settings › Notifications. (<a href="https://github.com/onurozcan/omux/pull/4">#4</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">The window's close, minimize and full screen buttons were missing on some macOS versions.</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">Scanning a session's output for file paths and local URLs read the terminal from a background thread (<a href="https://github.com/onurozcan/omux/issues/1">#1</a>).</div></li>
+</ul>
+  </div>
+</article>
+<article class="release" id="v0.2.0">
+  <div class="release-rail"><span class="node"></span></div>
+  <div class="release-meta">
+    <h2><a href="#v0.2.0">0.2.0</a></h2>
+    
+    <p><time datetime="2026-10-28">October 28, 2026</time></p>
+    <p><a href="https://github.com/onurozcan/omux/releases/tag/v0.2.0">Release on GitHub</a></p>
+  </div>
+  <div class="release-body">
+<ul class="entries">
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Worktree sessions</strong> (⌥⌘T). A session can get its own Git branch and folder, next to the repo in <code>&lt;repo&gt;.worktrees/&lt;branch&gt;</code>, so parallel sessions don't touch each other's files. A project setting makes it the default for new sessions. Right-click a worktree session to create a pull request, merge it into its base branch or open its folder. Closing one asks whether to keep or delete the worktree.</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Tabs in the right panel:</strong> Files (⌥⌘1), Changes (⌥⌘2) and Browser (⌥⌘3).</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Changes tab.</strong> Shows the session's diff: against the base branch for worktree sessions, uncommitted changes otherwise. Click a line to leave a note, then send all notes to Claude in one message.</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Browser tab.</strong> A web view per session that opens the local server the session prints, such as <code>localhost:3000</code>. The pick button adds an element's HTML, styles and a screenshot to the prompt.</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Allow and Deny</strong> in the sidebar and the session header when Claude asks for a tool permission, so you can answer without switching sessions.</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Subagents.</strong> The selected session lists its running subagents and what each one is doing. Other sessions show a count. The header's agents button lists them all, and clicking one opens its live transcript.</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">Restarting a session could mark it as stopped when the old terminal's exit arrived after the new one started.</div></li>
+</ul>
+  </div>
+</article>
+<article class="release" id="v0.1.0">
+  <div class="release-rail"><span class="node"></span></div>
+  <div class="release-meta">
+    <h2><a href="#v0.1.0">0.1.0</a></h2>
+    
+    <p><time datetime="2026-10-27">October 27, 2026</time></p>
+    <p><a href="https://github.com/onurozcan/omux/releases/tag/v0.1.0">Release on GitHub</a></p>
+  </div>
+  <div class="release-body">
+<p class="release-intro">First public release.</p>
+<ul class="entries">
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text">Projects and sessions in a sidebar, with drag to reorder, rename and colors.</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text">Claude conversations that resume after you quit and reopen omux.</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text">Live status for each session (working, needs you, done) and a Dock badge for sessions waiting on you.</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text">Files panel that previews Markdown, code and text, images, PDFs, audio, video and anything Quick Look can show.</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text">Recent Claude conversations (⇧⌘O), Claude plan usage limits in the sidebar, themes, terminal font settings and a quick switcher (⌘K).</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text">Open folders from Finder's "Open in omux" service, the Dock icon or <code>open -a omux &lt;folder&gt;</code>.</div></li>
+</ul>
+  </div>
+</article>
+</div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <nav class="footer-links" aria-label="Footer">
+      <a href="https://github.com/onurozcan/omux">GitHub</a>
+      <a href="https://github.com/onurozcan/omux/releases">Releases</a>
+      <a href="/changelog">Changelog</a>
+      <a href="https://github.com/onurozcan/omux/issues">Issues</a>
+      <a href="https://github.com/onurozcan/omux/blob/main/LICENSE">MIT license</a>
+    </nav>
+    <p class="fineprint">omux is an independent project, not affiliated with or endorsed by Anthropic or OpenAI. Claude and Claude Code are trademarks of Anthropic; Codex is a trademark of OpenAI.</p>
+  </div>
+</footer>
+<script src="main.js" defer></script>
+</body>
+</html>
