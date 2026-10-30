@@ -25,7 +25,7 @@
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
 
   <script type="application/ld+json">
   {
@@ -43,6 +43,23 @@
   </script>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
+  <symbol id="i-branch" viewBox="0 0 24 24"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></symbol>
+  <symbol id="i-pr" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" x2="6" y1="9" y2="21"/></symbol>
+  <symbol id="i-panels" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></symbol>
+  <symbol id="i-focus" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 4v16"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-merge" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+</svg>
 
 <header class="site-header">
   <div class="container header-row">
@@ -93,38 +110,47 @@
       <p class="muted section-lede">One window for every agent you have running. Each session is a real terminal with Claude Code or Codex in it; omux adds the things you keep checking by hand.</p>
       <div class="grid">
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg>
           <h3>Projects and sessions</h3>
           <p>A project is a folder; its sessions sit under it in the sidebar. Drag to reorder, rename, color. ⌘T starts a session, ⌘K jumps to one.</p>
         </article>
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-activity"/></svg>
           <h3>Status you can trust</h3>
           <p>Working, needs you, done: read from Claude Code's and Codex's own signals, not from guessing at the screen. The Dock badge counts sessions waiting on you.</p>
         </article>
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg>
           <h3>Allow or Deny without switching</h3>
           <p>When an agent stops to ask for a permission, Allow and Deny appear under the session and in its header. Answer from wherever you are.</p>
         </article>
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-users"/></svg>
           <h3>Subagents in view</h3>
           <p>A session running subagents lists them with what each one is doing. Click one to read its transcript in the side panel.</p>
         </article>
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-history"/></svg>
           <h3>Conversations that resume</h3>
           <p>Every session is pinned to its own conversation. Quit, reopen, and it continues where it left off, for Claude Code and Codex alike.</p>
         </article>
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-branch"/></svg>
           <h3>A worktree per session</h3>
           <p>⌥⌘T gives a session its own branch and folder, so parallel agents don't touch each other's files. A setup command can prepare each worktree first.</p>
         </article>
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-pr"/></svg>
           <h3>Pull requests, handled</h3>
           <p>With <code>gh</code> installed, a worktree session shows its pull request's checks, reviews and merge state, creates the PR, merges it, and offers to clean up afterwards.</p>
         </article>
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-panels"/></svg>
           <h3>Files, Changes and Browser</h3>
           <p>Preview what the session touches, read its diff and leave review notes that go back to the agent in one message, or open the local server it started and pick an element into the prompt. ⌘V pastes a screenshot as a file the agent can read.</p>
         </article>
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>
           <h3>Notifications and usage</h3>
           <p>A macOS notification with a sound when a session you aren't watching needs you. Your Claude or Codex plan limits in the sidebar, with a plain explanation when they can't be read.</p>
         </article>
@@ -138,26 +164,32 @@
       <p class="muted section-lede">Most terminals try to be everything. omux is one specific thing: the place where your coding agents run.</p>
       <div class="grid diff-grid">
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-terminal"/></svg>
           <h3>Built for Claude Code and Codex</h3>
           <p>Not a generic multiplexer with agent hooks bolted on. omux understands the two agents it hosts: their status, permission prompts, subagents, conversation ids and plan limits come from the agents' own protocols.</p>
         </article>
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-cpu"/></svg>
           <h3>Native Swift, not Electron</h3>
           <p>SwiftUI and SwiftTerm, a 5 MB download, a window that launches in under a second and idles at nothing. It looks and behaves like a Mac app because it is one.</p>
         </article>
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-focus"/></svg>
           <h3>A minimal, focused interface</h3>
           <p>A sidebar, one terminal, three panels. No blocks, no command palette of AI features, no agent of its own. Your attention goes to the sessions, and the sessions tell you when they need it.</p>
         </article>
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-user"/></svg>
           <h3>Your agents, your plans</h3>
           <p>omux runs the Claude Code and Codex you already have, signed in the way they already are. No account, no credits, no middleman between you and the model.</p>
         </article>
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-merge"/></svg>
           <h3>Parallel work the Git way</h3>
           <p>Worktrees, branches and pull requests are first-class, so running five agents on one repo doesn't mean five agents editing the same files.</p>
         </article>
         <article class="card">
+          <svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>
           <h3>Free, open, private</h3>
           <p>MIT-licensed, notarized by Apple, updated in place. No telemetry: the only network requests are the ones you can read about on this page.</p>
         </article>
