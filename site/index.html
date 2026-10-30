@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>omux – Claude Code and Codex sessions, side by side</title>
+  <meta name="description" content="omux is a native macOS terminal for running many Claude Code and Codex sessions side by side: projects, worktrees, live status, Allow/Deny from the sidebar, subagents, pull request status, and a files, changes and browser panel.">
+  <link rel="canonical" href="https://omux.app/">
+  <meta name="theme-color" content="#0F0F0F">
+  <meta name="color-scheme" content="dark">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="omux">
+  <meta property="og:url" content="https://omux.app/">
+  <meta property="og:title" content="omux – Claude Code and Codex sessions, side by side">
+  <meta property="og:description" content="A native macOS terminal for running many Claude Code and Codex sessions side by side. Projects, worktrees, live status, and Allow/Deny from the sidebar.">
+  <meta property="og:image" content="https://omux.app/social-preview.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta property="og:image:alt" content="The omux icon next to the app window with three sessions in a sidebar">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="omux – Claude Code and Codex sessions, side by side">
+  <meta name="twitter:description" content="A native macOS terminal for running many Claude Code and Codex sessions side by side.">
+  <meta name="twitter:image" content="https://omux.app/social-preview.png">
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "omux",
+    "operatingSystem": "macOS 14 or later",
+    "applicationCategory": "DeveloperApplication",
+    "url": "https://omux.app/",
+    "downloadUrl": "https://github.com/onurozcan/omux/releases/latest",
+    "license": "https://github.com/onurozcan/omux/blob/main/LICENSE",
+    "description": "A native macOS terminal for running many Claude Code and Codex sessions side by side.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-row">
+    <a class="brand" href="#top" aria-label="omux home">
+      <img src="favicon.svg" alt="" width="28" height="28">
+      <span>omux</span>
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/onurozcan/omux">GitHub</a>
+      <a class="btn btn-small btn-primary" href="https://github.com/onurozcan/omux/releases/latest" data-download>Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="container">
+      <h1>A native macOS terminal for running many Claude Code and Codex sessions side by side.</h1>
+      <p class="lede">Sessions are grouped into projects in a sidebar, each one keeps its conversation across relaunches, and each can run in its own Git worktree. See which session is working, which one is done and which one needs you, and answer Allow or Deny without switching to it.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary btn-large" href="https://github.com/onurozcan/omux/releases/latest" data-download data-download-label>Download for macOS</a>
+        <a class="btn btn-secondary btn-large" href="https://github.com/onurozcan/omux">View on GitHub</a>
+      </div>
+      <p class="cta-note">macOS 14 or later · <span data-release-size>free</span> · MIT license · <a href="#install">requirements</a></p>
+    </div>
+
+    <div class="container container-wide">
+      <figure class="shot">
+        <img
+          src="screenshot.png"
+          srcset="screenshot.png 1600w, screenshot@2x.png 2400w"
+          sizes="(min-width: 1240px) 1200px, calc(100vw - 32px)"
+          width="1600" height="1043"
+          alt="omux window: a sidebar with three projects and their sessions, one session running three subagents, one session waiting on Allow or Deny, and the Changes tab on the right showing a diff with a review note"
+          fetchpriority="high">
+        <figcaption>A worktree session running three subagents, a session waiting on Allow or Deny, and the Changes tab with a review note.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" id="features">
+    <div class="container">
+      <h2>What it does</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>Projects and sessions</h3>
+          <p>A project is a folder plus a default command; its sessions live under it in the sidebar. Drag to reorder or move sessions between projects, rename them, give them colors. ⌘T for a new session, ⌘K to jump to one.</p>
+        </article>
+        <article class="card">
+          <h3>Conversations that resume</h3>
+          <p>Claude sessions keep their pinned conversation UUID; Codex sessions keep the thread ID Codex assigns. Quit omux, reopen it, and Restart or Continue picks up that exact conversation.</p>
+        </article>
+        <article class="card">
+          <h3>Live status, Dock badge, notifications</h3>
+          <p>Each session shows whether its agent is working, needs you, or is done. The Dock badge counts sessions waiting on you. When a session you aren't looking at needs you, a macOS notification opens it on click.</p>
+        </article>
+        <article class="card">
+          <h3>Allow or deny from the sidebar</h3>
+          <p>Claude tool permissions and Codex command and file-change approvals show up as Allow and Deny buttons in the sidebar and the session header, so a session that stopped to ask doesn't need a tab switch.</p>
+        </article>
+        <article class="card">
+          <h3>Subagents</h3>
+          <p>While Claude Code or Codex runs subagents, the selected session lists them in the sidebar with what each one is doing. Click one in the header's agents button to read its transcript in the right panel.</p>
+        </article>
+        <article class="card">
+          <h3>Worktree sessions with pull request status</h3>
+          <p>⌥⌘T gives a session its own branch and folder next to the repo, so parallel sessions don't touch each other's files. A setup command can prepare each worktree first. With <code>gh</code> installed, the session shows its pull request's checks, reviews and merge state, and offers to clean up once it's merged.</p>
+        </article>
+        <article class="card">
+          <h3>Files, Changes and Browser</h3>
+          <p>Files previews what the session is working on, with ⌘-click on paths in the terminal. Changes shows the diff against the base branch; click a line to leave a note and send them all to the agent in one message. Browser opens the local server the session prints and can pick an element into the prompt.</p>
+        </article>
+        <article class="card">
+          <h3>Usage limits</h3>
+          <p>The sidebar shows the selected provider's plan limits, read from the same endpoint Claude Code's <code>/usage</code> uses, or from Codex's rate limit API. It says what's wrong when it can't.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="codex">
+    <div class="container split">
+      <div>
+        <h2>Codex sessions</h2>
+        <p>A project or session can run <a href="https://developers.openai.com/codex/cli">Codex</a> instead of Claude Code. Pick the agent in the project or session settings, in the worktree sheet, or with File › New Codex Session. omux starts a private Codex app-server per session and uses Codex's existing CLI login; it doesn't implement its own login or read Codex's credentials.</p>
+        <p class="muted">Needs Codex CLI 0.165 or later installed as <code>codex</code>. The app-server integration is experimental on the Codex side.</p>
+      </div>
+      <ul class="checklist">
+        <li>Live status in the sidebar and header</li>
+        <li>Allow and Deny for command and file-change approvals</li>
+        <li>Subagents and their transcripts</li>
+        <li>Conversations that resume after a relaunch</li>
+        <li>Recent Codex conversations (⇧⌘O)</li>
+        <li>Codex usage limits</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" id="install">
+    <div class="container">
+      <h2>Install</h2>
+
+      <div class="split">
+        <div>
+          <h3>Requirements</h3>
+          <ul class="plain">
+            <li>macOS 14 or later</li>
+            <li><a href="https://claude.com/claude-code">Claude Code</a> installed as <code>claude</code> for Claude sessions; plain shell sessions work without it</li>
+            <li><a href="https://developers.openai.com/codex/cli">Codex CLI</a> 0.165 or later installed as <code>codex</code>, optional, for Codex sessions</li>
+            <li><a href="https://cli.github.com">GitHub CLI</a>, optional, for pull request status</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3>Download</h3>
+          <p>Get the zip from the <a href="https://github.com/onurozcan/omux/releases/latest">latest GitHub release</a>, unzip it and move the app to Applications:</p>
+<pre><code>unzip omux-<span data-release-version>0.4.0</span>.zip
+mv omux.app /Applications/</code></pre>
+          <p>The first time, right-click <strong>omux.app</strong> and choose <strong>Open</strong>. The app is signed but not notarized, so a plain double-click shows a warning.</p>
+        </div>
+      </div>
+
+      <h3>Or build from source</h3>
+      <p>Needs Swift 5.9 or later (Xcode 15+ or the Command Line Tools). <code>build.sh</code> builds a release binary and replaces <code>/Applications/omux.app</code>, signed with your Apple Development certificate if you have one, ad hoc otherwise.</p>
+<pre><code>git clone https://github.com/onurozcan/omux.git
+cd omux
+./build.sh
+open /Applications/omux.app</code></pre>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="privacy">
+    <div class="container narrow">
+      <h2>Privacy</h2>
+      <p>omux has no telemetry. It makes three kinds of network requests, all for features you can see:</p>
+      <ul class="plain">
+        <li><strong>Usage limits.</strong> To show your plan limits, omux reads Claude Code's login from the macOS Keychain and sends it to the Claude usage endpoint, the same one Claude Code's <code>/usage</code> command uses. The token is never written to disk or logged.</li>
+        <li><strong>Pull request status.</strong> If <code>gh</code> is installed, omux runs <code>gh pr view</code> for each worktree session's branch. gh uses its own login; omux never reads your GitHub token.</li>
+        <li><strong>Codex.</strong> omux talks to its own Codex app-servers over authenticated loopback WebSockets, with analytics disabled. Codex itself connects to whatever your Codex settings say.</li>
+      </ul>
+      <p>The <a href="https://github.com/onurozcan/omux#privacy">Privacy section of the README</a> lists every local file omux reads or writes.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <nav class="footer-links" aria-label="Footer">
+      <a href="https://github.com/onurozcan/omux">GitHub</a>
+      <a href="https://github.com/onurozcan/omux/releases">Releases</a>
+      <a href="https://github.com/onurozcan/omux/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/onurozcan/omux/issues">Issues</a>
+      <a href="https://github.com/onurozcan/omux/blob/main/LICENSE">MIT license</a>
+    </nav>
+    <p class="fineprint">omux is an independent project, not affiliated with or endorsed by Anthropic or OpenAI. Claude and Claude Code are trademarks of Anthropic; Codex is a trademark of OpenAI.</p>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>
