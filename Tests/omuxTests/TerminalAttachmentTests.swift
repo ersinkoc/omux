@@ -31,6 +31,8 @@ final class TerminalAttachmentTests: XCTestCase {
         defer { board.releaseGlobally() }
         board.writeObjects([NSURL(fileURLWithPath: "/tmp/screen shot.png")])
         XCTAssertEqual(try TermView.attachmentText(from: board), "/tmp/screen\\ shot.png ")
+        // Unescaped, zsh and bash read "!v2" as history expansion: "event not found".
+        XCTAssertEqual(TermView.shellEscaped([URL(fileURLWithPath: "/tmp/shot!v2.png")]), "/tmp/shot\\!v2.png")
         board.clearContents()
         board.setString("hello", forType: .string)
         XCTAssertNil(try TermView.attachmentText(from: board))
