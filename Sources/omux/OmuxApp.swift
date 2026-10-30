@@ -38,6 +38,10 @@ enum Prefs {
     static let notifyNeedsYou = "notifyNeedsYou"
     static let notifyDone = "notifyDone"
     static let notifyPrograms = "notifyPrograms"
+    /// "banner" (default) or "sound".
+    static let notifyStyle = "notifyStyle"
+    /// A macOS alert sound name, or "Default".
+    static let notifySound = "notifySound"
 
     static let all = [confirmQuit, showFolderPath, usageInterval, theme, autoResume, showFiles, filesByDate,
                       filesBrowserCollapsed, previewWrapLines, panelTab, fontFamily, fontSize,
@@ -64,6 +68,8 @@ struct SettingsView: View {
     @AppStorage(Prefs.fontFamily) private var fontFamily = ""
     @AppStorage(Prefs.fontSize) private var fontSize = 13.0
     @AppStorage(Prefs.autoResume) private var autoResume = false
+    @AppStorage(Prefs.notifyStyle) private var notifyStyle = "banner"
+    @AppStorage(Prefs.notifySound) private var notifySound = "Default"
     @AppStorage(Prefs.previewWrapLines) private var wrapLines = true
     @AppStorage(Prefs.notifyNeedsYou) private var notifyNeedsYou = true
     @AppStorage(Prefs.notifyDone) private var notifyDone = false
@@ -110,6 +116,16 @@ struct SettingsView: View {
                 Text("Only for sessions you aren't looking at. Programs send them with OSC 9 or OSC 777: set Claude Code's notification channel to ghostty (/config) to get its plugins' notifications too.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Picker("Style", selection: $notifyStyle) {
+                    Text("Banner and sound").tag("banner")
+                    Text("Sound only").tag("sound")
+                }
+                HStack {
+                    Picker("Sound", selection: $notifySound) {
+                        ForEach(Notifier.sounds, id: \.self) { Text($0).tag($0) }
+                    }
+                    Button("Play") { Notifier.shared.playSound() }.controlSize(.small)
+                }
             }
         }
         .formStyle(.grouped)

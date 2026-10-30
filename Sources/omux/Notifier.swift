@@ -16,14 +16,30 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         center?.delegate = self
     }
 
+    /// The macOS alert sounds, by name, plus "Default".
+    static let sounds = ["Default", "Basso", "Blow", "Bottle", "Frog", "Funk", "Glass", "Hero", "Morse", "Ping", "Pop", "Purr", "Sosumi", "Submarine", "Tink"]
+
+    /// Plays the sound chosen in Settings. Sound-only notifications are just this.
+    func playSound() {
+        let name = UserDefaults.standard.string(forKey: Prefs.notifySound) ?? ""
+        let sound = NSSound(named: name.isEmpty || name == "Default" ? "Glass" : name) ?? NSSound(named: "Glass")
+        sound?.play()
+    }
+
     /// Shows a notification for a session, replacing the one it showed before.
+    /// With "sound only" in Settings, plays the sound and shows nothing.
     func post(tabID: UUID, title: String, subtitle: String?, body: String) {
-        guard let center else { return }
+        let soundOnly = UserDefaults.standard.string(forKey: Prefs.notifyStyle) == "sound"
+        let customSound = (UserDefaults.standard.string(forKey: Prefs.notifySound) ?? "").isEmpty == false
+            && UserDefaults.standard.string(forKey: Prefs.notifySound) != "Default"
+        if soundOnly || customSound { playSound() }
+        guard let center, !soundOnly else { return }
         let content = UNMutableNotificationContent()
         content.title = title
         if let subtitle, !subtitle.isEmpty { content.subtitle = subtitle }
         content.body = body
-        content.sound = .default
+        // A custom sound is played above, as the notification can't play system sounds by name.
+        content.sound = customSound ? nil : .default
         content.threadIdentifier = tabID.uuidString
         content.userInfo = ["tabID": tabID.uuidString]
         let request = UNNotificationRequest(identifier: tabID.uuidString, content: content, trigger: nil)
@@ -36,6 +52,18 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     /// Removes a session's notification from Notification Center once you've seen the session.
     func clear(tabID: UUID) {
         center?.removeDeliveredNotifications(withIdentifiers: [tabID.uuidString])
+    }
+
+    func authorizationStatus() async -> UNAuthorizationStatus {
+        guard let center else { return .denied }
+        return await center.notificationSettings().authorizationStatus
+    }
+
+    /// Asks now, for the welcome sheet. Returns the resulting status.
+    func requestAuthorization() async -> UNAuthorizationStatus {
+        guard let center else { return .denied }
+        _ = try? await center.requestAuthorization(options: [.alert, .sound])
+        return await center.notificationSettings().authorizationStatus
     }
 
     /// Asks for permission the first time there is something to show, not at launch.
