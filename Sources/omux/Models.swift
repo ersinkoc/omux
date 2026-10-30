@@ -147,8 +147,14 @@ struct TabRuntime: Equatable {
         let title: String?
     }
 
-    /// Claude Code is waiting on a tool permission, which Allow/Deny can answer.
-    var awaitsPermission: Bool { statusState == .blocked && statusKind == "permission" }
+    /// Claude Code is waiting on a tool permission, which Allow/Deny can answer. It reports plan
+    /// approval and peer messages as "permission" too, but their first option isn't a plain
+    /// yes; a tool prompt's message reads "approve <Tool>: …".
+    var awaitsPermission: Bool {
+        guard statusState == .blocked, statusKind == "permission" else { return false }
+        guard provider != .codex, let message = statusDetail else { return true }
+        return message.range(of: #"^approve [\w-]+: "#, options: .regularExpression) != nil
+    }
 
     func statusLine(showFolder: Bool = true) -> String? {
         if let s = statusState {

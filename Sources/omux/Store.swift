@@ -332,7 +332,8 @@ final class Store: ObservableObject {
         terminals[id]?.terminalInputStateSnapshot()?.bracketedPasteMode == true
     }
 
-    /// Answers Claude Code's permission prompt: Return picks its default "Yes",
+    /// Answers Claude Code's permission prompt: "1" picks its "Yes" wherever the highlight is
+    /// (Return would take the highlighted row, e.g. "allow all edits during this session"),
     /// Escape is its "No, and tell Claude what to do differently".
     func answerPermission(_ id: UUID, allow: Bool) {
         if runtime[id]?.provider == .codex {
@@ -343,7 +344,7 @@ final class Store: ObservableObject {
             return
         }
         guard let view = terminals[id], runtime[id]?.awaitsPermission == true else { return }
-        view.send(txt: allow ? "\r" : "\u{1b}")
+        view.send(txt: allow ? "1" : "\u{1b}")
     }
 
     /// Shows the right panel on the given tab.
