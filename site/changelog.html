@@ -41,11 +41,28 @@
     <h1>Changelog</h1>
     <p class="lede muted">What changed in each release, newest first. Versions follow <a href="https://semver.org">semantic versioning</a>; the source is <a href="https://github.com/onurozcan/omux/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
 <div class="timeline">
+<article class="release" id="v0.6.1">
+  <div class="release-rail"><span class="node"></span></div>
+  <div class="release-meta">
+    <h2><a href="#v0.6.1">0.6.1</a></h2>
+    <span class="badge badge-latest">Latest</span>
+    <p><time datetime="2026-10-30">October 30, 2026</time></p>
+    <p><a href="https://github.com/onurozcan/omux/releases/tag/v0.6.1">Release on GitHub</a></p>
+  </div>
+  <div class="release-body">
+<ul class="entries">
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Drop images into a session from any app.</strong> Dropping image data, or a file promise as Photos and browsers send, saves the image and pastes its path, which Claude Code and Codex read as an attachment. Until now only files could be dropped. (<a href="https://github.com/onurozcan/omux/pull/8">#8</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">A value from a newer version in <code>workspace.json</code>, such as an unknown session provider or color, made the whole workspace fail to load and get overwritten with an empty one. Unknown values now decode as unset. Recent conversations with non-ASCII text near the 128 KB read limit no longer go missing from the list. (<a href="https://github.com/onurozcan/omux/pull/12">#12</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">A commit hook that printed more than 64 KB to stderr froze omux for good. Diffs for a file that changed between a symlink and a regular file showed a second file header as content. Session names with <code>..</code> or <code>//</code> produced branch names git rejects. (<a href="https://github.com/onurozcan/omux/pull/9">#9</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">Option typed the Meta prefix instead of the keyboard layout's character, so ⌥Q on a Turkish layout didn't give "@". Option now composes the layout's character and stays Meta only on keys without one: arrows, ⌥⏎, ⌥⌫, Escape and Tab. (<a href="https://github.com/onurozcan/omux/pull/11">#11</a>)</div></li>
+</ul>
+  </div>
+</article>
 <article class="release" id="v0.6.0">
   <div class="release-rail"><span class="node"></span></div>
   <div class="release-meta">
     <h2><a href="#v0.6.0">0.6.0</a></h2>
-    <span class="badge badge-latest">Latest</span>
+    
     <p><time datetime="2026-10-30">October 30, 2026</time></p>
     <p><a href="https://github.com/onurozcan/omux/releases/tag/v0.6.0">Release on GitHub</a></p>
   </div>

@@ -2,7 +2,7 @@
 
 All notable changes to omux are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
-## [Unreleased]
+## [0.6.1] - 2026-10-30
 
 ### Added
 
@@ -95,6 +95,7 @@ First public release.
 - Recent Claude conversations (⇧⌘O), Claude plan usage limits in the sidebar, themes, terminal font settings and a quick switcher (⌘K).
 - Open folders from Finder's "Open in omux" service, the Dock icon or `open -a omux <folder>`.
 
+[0.6.1]: https://github.com/onurozcan/omux/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/onurozcan/omux/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/onurozcan/omux/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/onurozcan/omux/compare/v0.4.0...v0.5.0
