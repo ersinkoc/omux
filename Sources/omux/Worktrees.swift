@@ -43,11 +43,13 @@ extension Store {
             return
         }
         let dirty = Git.run(["status", "--porcelain"], in: path).out.split(separator: "\n").count
+        // nil when git can't compare, e.g. the base branch was deleted or renamed: unknown, not zero.
         let ahead = Int(Git.run(["rev-list", "--count", "\(worktree.base)..\(worktree.branch)"], in: worktree.repo).out
-            .trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
+            .trimmingCharacters(in: .whitespacesAndNewlines))
         var facts: [String] = []
         if dirty > 0 { facts.append("\(dirty) uncommitted file\(dirty == 1 ? "" : "s")") }
-        if ahead > 0 { facts.append("\(ahead) commit\(ahead == 1 ? "" : "s") not in \(worktree.base)") }
+        if let ahead, ahead > 0 { facts.append("\(ahead) commit\(ahead == 1 ? "" : "s") not in \(worktree.base)") }
+        if ahead == nil { facts.append("commits that couldn't be compared with \(worktree.base)") }
 
         let alert = NSAlert()
         alert.messageText = "Close “\(tab.name)”?"
