@@ -39,11 +39,27 @@ cp Resources/omux.icns "$APP/Contents/Resources/"
 for bundle in .build/release/*.bundle; do
   [ -e "$bundle" ] && cp -R "$bundle" "$APP/Contents/Resources/"
 done
+# Sparkle, for updates. The binary looks for it in Contents/Frameworks (see Package.swift).
+SPARKLE_DIR=.build/artifacts/sparkle/Sparkle
+mkdir -p "$APP/Contents/Frameworks"
+cp -R "$SPARKLE_DIR/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework" "$APP/Contents/Frameworks/"
+
+# Signs Sparkle's nested helpers with our identity, inside out, so library validation and
+# notarization accept them. $1 identity, remaining args extra codesign options.
+sign_sparkle() {
+  local identity=$1; shift
+  local fw="$APP/Contents/Frameworks/Sparkle.framework/Versions/B"
+  for item in "$fw/XPCServices/Installer.xpc" "$fw/XPCServices/Downloader.xpc" "$fw/Autoupdate" "$fw/Updater.app"; do
+    codesign --force --sign "$identity" --preserve-metadata=entitlements "$@" "$item" 2>&1 | grep -v "replacing existing signature" || true
+  done
+  codesign --force --sign "$identity" "$@" "$APP/Contents/Frameworks/Sparkle.framework" 2>&1 | grep -v "replacing existing signature" || true
+}
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
 
 if [[ "$MODE" == "install" ]]; then
   # A stable signing identity keeps macOS from re-asking permissions after each rebuild.
   IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | head -1 | awk '{print $2}')
+  sign_sparkle "${IDENTITY:--}"
   codesign --force --sign "${IDENTITY:--}" "$APP" 2>&1 | grep -v "replacing existing signature" || true
   # Install to /Applications so Finder's "Open in omux" service and Dock stay registered.
   rm -rf "/Applications/$NAME.app"
@@ -73,6 +89,7 @@ MSG
 fi
 
 # Hardened runtime and a secure timestamp are required for notarization.
+sign_sparkle "$IDENTITY" --options runtime --timestamp
 codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
 codesign --verify --strict --deep "$APP"
 
@@ -105,6 +122,39 @@ codesign --force --timestamp --sign "$IDENTITY" "$DMG"
 if [[ "$NOTARIZE" == 1 ]]; then
   notarize "$DMG"
   xcrun stapler staple "$DMG" >/dev/null
+fi
+
+# Appcast for Sparkle: the release notes come from this version's CHANGELOG section, embedded.
+# generate_appcast signs the zip with the EdDSA key in the Keychain and merges into site/appcast.xml.
+if [[ "$NAME" == omux ]]; then
+  STAGE=$(mktemp -d)
+  cp "$ZIP" "$STAGE/"
+  python3 - "$VERSION" > "$STAGE/omux-$VERSION.html" <<'PY'
+import html, re, sys
+version = sys.argv[1]
+text = open("CHANGELOG.md").read()
+start = text.find(f"## [{version}]")
+end = text.find("\n## [", start + 1)
+section = text[start:end if end > 0 else None].split("\n", 1)[1]
+def inline(t):
+    t = html.escape(t, quote=False)
+    t = re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
+    t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", t)
+    return re.sub(r"\[([^\]]+)\]\((https?://[^)]+)\)", r'<a href="\2">\1</a>', t)
+out = []
+for line in section.splitlines():
+    if line.startswith("### "): out.append(f"<h3>{html.escape(line[4:])}</h3>")
+    elif line.startswith("- "): out.append(f"<li>{inline(line[2:])}</li>")
+    elif line.strip(): out.append(f"<p>{inline(line.strip())}</p>")
+body = "\n".join(out).replace("</h3>\n<li>", "</h3>\n<ul>\n<li>").replace("</li>\n<h3>", "</li>\n</ul>\n<h3>")
+if body.endswith("</li>"): body += "\n</ul>"
+print(f"<html><body style=\"font: 13px -apple-system, sans-serif\">\n{body}\n</body></html>")
+PY
+  "$SPARKLE_DIR/bin/generate_appcast" --embed-release-notes --link https://omux.app \
+    --download-url-prefix "https://github.com/onurozcan/omux/releases/download/v$VERSION/" \
+    -o site/appcast.xml "$STAGE" | grep -vE "^\s*$" || true
+  rm -rf "$STAGE"
+  echo "Updated site/appcast.xml (deploy the site to publish the update)"
 fi
 
 echo "Built $DMG ($(du -h "$DMG" | cut -f1)) and $ZIP ($(du -h "$ZIP" | cut -f1))"

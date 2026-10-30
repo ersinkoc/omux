@@ -2,6 +2,12 @@
 
 All notable changes to omux are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+
+- **Updates.** omux checks for new versions about once a day with [Sparkle](https://sparkle-project.org) and offers to install them; Help › Check for Updates… checks now. Updates are signed and must pass notarization before they're installed.
+
 ## [0.5.1] - 2026-10-30
 
 ### Changed

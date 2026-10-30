@@ -24,6 +24,7 @@ Built with SwiftUI and [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm).
 - **Images and files in the prompt.** ⌘V with an image on the clipboard pastes it as a file path, which Claude Code and Codex read as an attachment. ⌘V with files, or dropping files onto the terminal, pastes their paths.
 - **Recent conversations** (⇧⌘O). Switch between Claude Code's recent conversations and the Codex conversation catalog.
 - **Usage limits.** The sidebar shows the selected provider's plan limits when available (see [Privacy](#privacy)).
+- **Updates.** omux checks for new versions about once a day and offers to install them, with the release notes; Help › Check for Updates… checks now. Updates are signed and verified before they're installed.
 - **Open folders from anywhere.** Finder's right-click "Open in omux" service, dropping a folder on the Dock icon, or `open -a omux <folder>`.
 - Themes, terminal font and size, and a quick switcher (⌘K).
 
@@ -67,7 +68,7 @@ builds and installs **omux Beta** next to the release app instead, with its own 
 ./build.sh --dist
 ```
 
-builds the release that goes on GitHub: signed with the Developer ID certificate and the hardened runtime, notarized, stapled, and packaged as `build/omux-<version>.dmg` and `.zip`. It needs the notarization credentials stored once with `xcrun notarytool store-credentials omux-notary`; `--no-notarize` only signs.
+builds the release that goes on GitHub: signed with the Developer ID certificate and the hardened runtime, notarized, stapled, and packaged as `build/omux-<version>.dmg` and `.zip`. It also signs the zip for Sparkle and adds the version to `site/appcast.xml`, which goes live with the site. It needs the notarization credentials stored once with `xcrun notarytool store-credentials omux-notary`; `--no-notarize` only signs.
 
 ## Keyboard shortcuts
 
@@ -92,6 +93,7 @@ omux has no telemetry. Its integrations use these network paths:
 
 - **Usage limits.** To show your plan limits, omux reads Claude Code's login from the macOS Keychain (the `Claude Code-credentials` item, via `/usr/bin/security`) and sends it to `https://api.anthropic.com/api/oauth/usage`, the same endpoint Claude Code's `/usage` command uses. The token is never written to disk or logged. This endpoint is undocumented and may change or stop working at any time.
 - **Pull request status.** If `gh` is installed, omux runs `gh pr view` for each worktree session's branch about once a minute and when you switch back to omux. gh uses its own login; omux never reads or stores your GitHub token.
+- **Updates.** About once a day, omux fetches `https://omux.app/appcast.xml` to see whether a newer version exists, and downloads the update from GitHub only when you accept it. Nothing about you or your machine is sent.
 - **Codex.** omux communicates with its owned Codex app-servers over authenticated loopback WebSockets. Codex itself connects to the model provider, tools, and services configured in your Codex settings. Usage is requested through `account/rateLimits/read`; accounts without supported plan limits display an unavailable message. omux starts its app-servers with analytics disabled.
 
 Local files omux touches:

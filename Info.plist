@@ -50,6 +50,12 @@
 	<string>NSApplication</string>
 	<key>NSSupportsAutomaticTermination</key>
 	<false/>
+	<key>SUFeedURL</key>
+	<string>https://omux.app/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>JXrnDvYmpWaRE9raURgAKw8apKLJtgWg1Nxhe20OoM0=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
 	<key>NSSupportsSuddenTermination</key>
 	<false/>
 	<key>NSServices</key>

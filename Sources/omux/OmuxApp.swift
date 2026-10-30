@@ -302,6 +302,7 @@ struct AppCommands: Commands {
     @ObservedObject var store: Store
 
     var body: some Commands {
+        CommandGroup(after: .appInfo) { CheckForUpdatesButton() }
         CommandGroup(replacing: .newItem) {
             Button("New Session") { store.newTab() }.keyboardShortcut("t")
             Button("New Codex Session") { store.newTab(command: "codex") }
@@ -379,6 +380,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.servicesProvider = services
         NSUpdateDynamicServices()
         Notifier.shared.activate()
+        _ = Updater.shared
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }

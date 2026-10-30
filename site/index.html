@@ -184,6 +184,7 @@ open /Applications/omux.app</code></pre>
       <ul class="plain">
         <li><strong>Usage limits.</strong> To show your plan limits, omux reads Claude Code's login from the macOS Keychain and sends it to the Claude usage endpoint, the same one Claude Code's <code>/usage</code> command uses. The token is never written to disk or logged.</li>
         <li><strong>Pull request status.</strong> If <code>gh</code> is installed, omux runs <code>gh pr view</code> for each worktree session's branch. gh uses its own login; omux never reads your GitHub token.</li>
+        <li><strong>Updates.</strong> About once a day, omux fetches <code>omux.app/appcast.xml</code> to see whether a newer version exists, and downloads it from GitHub only when you accept. Nothing about you or your machine is sent.</li>
         <li><strong>Codex.</strong> omux talks to its own Codex app-servers over authenticated loopback WebSockets, with analytics disabled. Codex itself connects to whatever your Codex settings say.</li>
       </ul>
       <p>The <a href="https://github.com/onurozcan/omux#privacy">Privacy section of the README</a> lists every local file omux reads or writes.</p>
