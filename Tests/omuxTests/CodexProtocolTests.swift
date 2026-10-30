@@ -57,6 +57,23 @@ final class CodexProtocolTests: XCTestCase {
         XCTAssertNotNil(manager.approval(for: b))
     }
 
+    /// A click answers the approval the buttons showed. Once that one is gone, the next one
+    /// (which the user hasn't seen yet) isn't answered in its place.
+    @MainActor
+    func testAnswerOnlyTheShownApproval() async throws {
+        let manager = CodexManager(), tab = UUID()
+        manager.register(tabID: tab, threadID: "t")
+        manager.receive(["method": "turn/started", "params": ["threadId": "t", "turn": ["id": "turn"]]], owner: tab)
+        for (id, command) in [(10, "git status"), (11, "rm -rf ~/project")] {
+            manager.receive(["id": id, "method": "item/commandExecution/requestApproval",
+                             "params": ["threadId": "t", "turnId": "turn", "command": command]], owner: tab)
+        }
+        let shown = try XCTUnwrap(manager.approval(for: tab))
+        manager.receive(["method": "serverRequest/resolved", "params": ["threadId": "t", "requestId": 10]], owner: tab)
+        try await manager.answer(shown, tabID: tab, allow: true)  // no connection: answering anything would throw
+        XCTAssertEqual(manager.approval(for: tab)?.detail, "rm -rf ~/project")
+    }
+
     @MainActor
     func testSparseQuotaUpdatesPreserveOtherWindows() {
         let manager = CodexManager(), tab = UUID()

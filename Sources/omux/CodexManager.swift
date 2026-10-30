@@ -122,8 +122,10 @@ final class CodexManager: ObservableObject {
         return (agents[tabID] ?? []).compactMap { approvals[$0.id]?.first }.first
     }
 
-    func answer(tabID: UUID, allow: Bool) async throws {
-        guard let approval = approval(for: tabID), !answering.contains(approval) else { return }
+    /// Answers `approval`, the one the user was shown, and nothing else: once it's answered the
+    /// next one moves up, and a second click (a double-click) must not accept that unseen.
+    func answer(_ approval: CodexApproval, tabID: UUID, allow: Bool) async throws {
+        guard self.approval(for: tabID) == approval, !answering.contains(approval) else { return }
         answering.insert(approval)
         defer { answering.remove(approval) }
         try await connection(for: tabID).respond(to: approval.id, result: ["decision": allow ? "accept" : "decline"])

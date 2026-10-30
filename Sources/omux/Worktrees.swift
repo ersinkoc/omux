@@ -351,8 +351,9 @@ struct PermissionButtons: View {
     @State private var details = false
 
     var body: some View {
+        let shown = codex.approval(for: tabID)
         HStack(spacing: 6) {
-            if let approval = codex.approval(for: tabID) {
+            if let approval = shown {
                 Button { details.toggle() } label: { Image(systemName: "info.circle") }
                     .help(approval.detail)
                     .popover(isPresented: $details) {
@@ -360,9 +361,9 @@ struct PermissionButtons: View {
                             .frame(width: 420, height: 180)
                     }
             }
-            Button("Allow") { store.answerPermission(tabID, allow: true) }
+            Button("Allow") { store.answerPermission(tabID, allow: true, codexApproval: shown) }
                 .buttonStyle(.borderedProminent)
-            Button("Deny") { store.answerPermission(tabID, allow: false) }
+            Button("Deny") { store.answerPermission(tabID, allow: false, codexApproval: shown) }
                 .buttonStyle(.bordered)
         }
         .controlSize(.small)

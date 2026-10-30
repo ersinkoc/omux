@@ -334,10 +334,12 @@ final class Store: ObservableObject {
 
     /// Answers Claude Code's permission prompt: Return picks its default "Yes",
     /// Escape is its "No, and tell Claude what to do differently".
-    func answerPermission(_ id: UUID, allow: Bool) {
+    /// For Codex, `codexApproval` is the request the buttons showed.
+    func answerPermission(_ id: UUID, allow: Bool, codexApproval: CodexApproval? = nil) {
         if runtime[id]?.provider == .codex {
+            guard let codexApproval else { return }
             Task {
-                do { try await CodexManager.shared.answer(tabID: id, allow: allow) }
+                do { try await CodexManager.shared.answer(codexApproval, tabID: id, allow: allow) }
                 catch { Self.showError("Couldn't answer Codex", error.localizedDescription) }
             }
             return
