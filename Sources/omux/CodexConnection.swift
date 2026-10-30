@@ -77,7 +77,9 @@ final class CodexConnection {
         child.standardError = FileHandle.nullDevice
         child.terminationHandler = { [weak self] child in
             Task { @MainActor in
-                guard let self, self.process === child else { return }
+                // While connecting, open() sees the exit and reports .unavailable; closing here
+                // would cancel it into a bare CancellationError and report a disconnect.
+                guard let self, self.process === child, self.isReady else { return }
                 self.close(notify: true)
             }
         }

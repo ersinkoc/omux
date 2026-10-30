@@ -2,6 +2,36 @@ import XCTest
 @testable import omux
 
 final class CodexConnectionTests: XCTestCase {
+    /// A codex that exits while connecting (not on PATH, bad flag, crash) gets the
+    /// "Install Codex CLI" message, not "Swift.CancellationError error 1", and no disconnect.
+    @MainActor
+    func testCodexExitingWhileConnectingIsUnavailable() async throws {
+        guard (ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh").hasSuffix("/zsh") else {
+            throw XCTSkip("Puts a fake codex on the login shell's PATH through ZDOTDIR")
+        }
+        let home = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: home.appendingPathComponent("bin"), withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: home) }
+        let codex = home.appendingPathComponent("bin/codex")
+        try "#!/bin/sh\nexit 127\n".write(to: codex, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: codex.path)
+        try "export PATH=\"\(home.path)/bin:$PATH\"\n".write(to: home.appendingPathComponent(".zprofile"), atomically: true, encoding: .utf8)
+        var env = ProcessInfo.processInfo.environment
+        env["ZDOTDIR"] = home.path
+        let connection = CodexConnection(environment: env)
+        defer { connection.close() }
+        var disconnected = false
+        connection.onDisconnect = { disconnected = true }
+        do {
+            try await connection.connect()
+            XCTFail("Connected to a codex that exited")
+        } catch CodexError.unavailable {
+        } catch {
+            XCTFail("\(error)")
+        }
+        XCTAssertFalse(disconnected)
+    }
+
     /// Opt-in: starts the installed CLI with a temporary CODEX_HOME and no real
     /// credentials. No model turn is sent and no user conversations are read.
     @MainActor
