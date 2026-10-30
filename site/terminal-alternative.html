@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Terminal alternative for Claude Code and Codex on macOS: omux</title>
+  <meta name="description" content="Terminal alternative for running Claude Code and Codex: omux is a native macOS app that keeps every agent session in a sidebar with live status, Allow/Deny buttons, subagents, worktrees and conversations that resume. What Terminal and iTerm2 still do better, and where omux is.">
+  <link rel="canonical" href="https://omux.app/terminal-alternative">
+  <meta name="theme-color" content="#0F0F0F">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="omux">
+  <meta property="og:url" content="https://omux.app/terminal-alternative">
+  <meta property="og:title" content="Terminal alternative for Claude Code and Codex on macOS: omux">
+  <meta property="og:description" content="Terminal alternative for running Claude Code and Codex: omux is a native macOS app that keeps every agent session in a sidebar with live status, Allow/Deny buttons, subagents, worktrees and conversations that resume. What Terminal and iTerm2 still do better, and where omux is.">
+  <meta property="og:image" content="https://omux.app/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css?v=6">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Do I stop using Terminal or iTerm2?", "acceptedAnswer": {"@type": "Answer", "text": "No. Keep them for shell work. omux is for the sessions that run an agent; a plain shell session in omux is a normal login shell too, so you can do both in one window if you prefer."}}, {"@type": "Question", "name": "Does omux use its own terminal engine?", "acceptedAnswer": {"@type": "Answer", "text": "It uses SwiftTerm, an open-source terminal emulator written in Swift. Claude Code and Codex render in it exactly as they do in Terminal."}}, {"@type": "Question", "name": "Can omux import my Terminal or iTerm2 profile?", "acceptedAnswer": {"@type": "Answer", "text": "No. omux has its own themes and font settings in its preferences."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "omux", "item": "https://omux.app/"}, {"@type": "ListItem", "position": 2, "name": "Terminal alternative", "item": "https://omux.app/terminal-alternative"}]}</script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-row">
+    <a class="brand" href="/" aria-label="omux home">
+      <img src="favicon.svg" alt="" width="28" height="28">
+      <span>omux</span>
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="/#features">Features</a>
+      <a href="/#install">Install</a>
+      <a href="https://github.com/onurozcan/omux">GitHub</a>
+      <a class="btn btn-small btn-primary" href="https://github.com/onurozcan/omux/releases/latest" data-download>Download</a>
+    </nav>
+  </div>
+</header>
+
+<main class="section compare">
+  <div class="container narrow">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">omux</a> › Terminal alternative</nav>
+    <h1>Terminal alternative for running Claude Code and Codex on your Mac</h1>
+<p class="lede">Terminal, and iTerm2 for many people, is where Claude Code and Codex run by default: a tab per session, and you cycle through them to see which one has stopped to ask something. It works until the third or fourth session.</p>
+<p class="lede">omux keeps the terminal and changes the thing around it. Each session is still a real terminal, but it lives under a project in a sidebar that shows whether the agent is working, waiting on you or done, with Allow and Deny right there. This page sets out what you keep, what you gain and what you give up.</p>
+
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://github.com/onurozcan/omux/releases/latest" data-download>Download omux for macOS</a>
+      <a class="btn btn-secondary" href="https://support.apple.com/guide/terminal/welcome/mac" rel="nofollow noopener">About Terminal</a>
+    </div>
+
+<div class="glance" role="table" aria-label="At a glance">
+      <div class="glance-row glance-head" role="row"><span class="glance-label">At a glance</span><span>omux</span><span>Terminal</span></div>
+<div class="glance-row"><span class="glance-label">Ships with macOS</span><span class="mark no" aria-label="no">✕</span><span class="mark yes" aria-label="yes">✓</span></div>
+<div class="glance-row"><span class="glance-label">Agent status and Allow/Deny</span><span class="mark yes" aria-label="yes">✓</span><span class="mark no" aria-label="no">✕</span></div>
+<div class="glance-row"><span class="glance-label">Subagent transcripts</span><span class="mark yes" aria-label="yes">✓</span><span class="mark no" aria-label="no">✕</span></div>
+<div class="glance-row"><span class="glance-label">Resumes agent conversations</span><span class="mark yes" aria-label="yes">✓</span><span class="mark no" aria-label="no">✕</span></div>
+<div class="glance-row"><span class="glance-label">Worktrees and pull requests</span><span class="mark yes" aria-label="yes">✓</span><span class="mark no" aria-label="no">✕</span></div>
+<div class="glance-row"><span class="glance-label">Notifications when an agent needs you</span><span class="mark yes" aria-label="yes">✓</span><span class="mark partial" aria-label="partly">~</span></div>
+<div class="glance-row"><span class="glance-label">Split panes and profiles</span><span class="mark no" aria-label="no">✕</span><span class="mark yes" aria-label="yes">✓</span></div>
+<div class="glance-row"><span class="glance-label">Free and open source</span><span class="mark yes" aria-label="yes">✓</span><span class="mark partial" aria-label="partly">~</span></div>
+    </div>
+
+    <figure class="shot compare-shot">
+      <img src="screenshot.png" srcset="screenshot.png 1600w, screenshot@2x.png 2400w" sizes="(min-width: 800px) 760px, calc(100vw - 32px)" width="1600" height="987" loading="lazy" alt="omux with eight projects in the sidebar, a session running five subagents, a session waiting on Allow or Deny, two Codex sessions, and the Changes tab showing the diff">
+      <figcaption>omux: projects and sessions on the left, the agent in the middle, its diff on the right. The session that needs you shows Allow and Deny.</figcaption>
+    </figure>
+
+    <h2>Side by side</h2>
+    <div class="table-wrap">
+    <table class="compare-table">
+      <thead><tr><th scope="col"></th><th scope="col">omux</th><th scope="col">Terminal</th></tr></thead>
+      <tbody>
+<tr><th scope="row">What it is</th><td>A session manager for coding agents, with a terminal in each session</td><td>A general-purpose terminal</td></tr>
+<tr><th scope="row">Runs on</th><td>macOS</td><td>Ships with macOS; iTerm2 is a free download</td></tr>
+<tr><th scope="row">Knows what the agent is doing</th><td><span class="mark yes" aria-label="yes">✓</span> working, needs you, done, read from the agents' own signals</td><td><span class="mark no" aria-label="no">✕</span> a tab is a tab, and a bell at best</td></tr>
+<tr><th scope="row">Answer a permission prompt</th><td>Allow and Deny buttons under the session, from anywhere</td><td>Find the tab and type</td></tr>
+<tr><th scope="row">Subagents</th><td>Listed under the session, transcripts in the side panel</td><td>Not visible unless the agent prints them</td></tr>
+<tr><th scope="row">Conversations after a relaunch</th><td>Each session resumes its exact Claude or Codex conversation</td><td>Reopen the tab and run claude --resume by hand</td></tr>
+<tr><th scope="row">Git worktrees and pull requests</th><td>One worktree per session, PR status, merge and clean up</td><td>Manual</td></tr>
+<tr><th scope="row">Diff, files and browser next to the agent</th><td>Built-in panels, with review notes sent to the agent</td><td>Other apps</td></tr>
+<tr><th scope="row">Notifications</th><td>When a session you aren't looking at needs you, with a sound</td><td>Bell notifications only</td></tr>
+<tr><th scope="row">Split panes, profiles, tmux integration</th><td><span class="mark no" aria-label="no">✕</span></td><td><span class="mark yes" aria-label="yes">✓</span> especially in iTerm2</td></tr>
+<tr><th scope="row">Everyday shell work</th><td>A plain shell session works, but it's not the focus</td><td>Its whole purpose</td></tr>
+<tr><th scope="row">Price and license</th><td>Free, MIT</td><td>Terminal is part of macOS; iTerm2 is free, GPL</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="split">
+      <div class="card pick pick-other">
+        <h2><span class="pick-icon" aria-hidden="true">→</span> Pick Terminal if</h2>
+        <ul><li>Most of your terminal time is ordinary shell work, not agents.</li><li>You want split panes, profiles, triggers, or tmux integration.</li><li>You're happy with one or two agent sessions and a tab for each.</li></ul>
+      </div>
+      <div class="card pick pick-omux">
+        <h2><span class="pick-icon" aria-hidden="true">★</span> Pick omux if</h2>
+        <ul><li>You run several Claude Code or Codex sessions and want to see which one needs you without cycling tabs.</li><li>You'd rather click Allow than hunt for the session that's asking.</li><li>You want each session to come back after a relaunch, with its own worktree and its diff beside it.</li></ul>
+      </div>
+    </div>
+
+    <h2>What omux does for every session</h2>
+    <ul class="checklist">
+      <li>Projects with sessions under them, in a sidebar</li>
+      <li>Shows whether each agent is working, needs you or is done</li>
+      <li>Allow or Deny an agent's permission request without switching to it</li>
+      <li>Lists a session's subagents and opens their transcripts</li>
+      <li>Resumes each Claude Code and Codex conversation after a relaunch</li>
+      <li>Git worktree per session, with pull request status and merge</li>
+      <li>Files, Changes (diff with review notes) and Browser panels</li>
+      <li>Claude and Codex plan usage limits in the sidebar</li>
+      <li>macOS notifications with sound</li>
+    </ul>
+
+    <h2>Questions</h2>
+<details><summary>Do I stop using Terminal or iTerm2?</summary><p>No. Keep them for shell work. omux is for the sessions that run an agent; a plain shell session in omux is a normal login shell too, so you can do both in one window if you prefer.</p></details>
+<details><summary>Does omux use its own terminal engine?</summary><p>It uses SwiftTerm, an open-source terminal emulator written in Swift. Claude Code and Codex render in it exactly as they do in Terminal.</p></details>
+<details><summary>Can omux import my Terminal or iTerm2 profile?</summary><p>No. omux has its own themes and font settings in its preferences.</p></details>
+
+    <p class="muted">Also compared: <a href="/tmux-alternative">tmux alternative</a>, <a href="/cmux-alternative">cmux alternative</a>, <a href="/warp-alternative">Warp alternative</a>, <a href="/herdr-alternative">herdr alternative</a>. Facts about Terminal come from its public documentation as of 2026-10-30; if something is out of date, <a href="https://github.com/onurozcan/omux/issues">open an issue</a>.</p>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <nav class="footer-links" aria-label="Footer">
+      <a href="https://github.com/onurozcan/omux">GitHub</a>
+      <a href="https://github.com/onurozcan/omux/releases">Releases</a>
+      <a href="/changelog">Changelog</a>
+      <a href="https://github.com/onurozcan/omux/issues">Issues</a>
+      <a href="https://github.com/onurozcan/omux/blob/main/LICENSE">MIT license</a>
+    </nav>
+    <nav class="footer-links footer-compare" aria-label="Comparisons">
+      <span class="muted">Compare:</span><a href="/tmux-alternative">tmux alternative</a><a href="/cmux-alternative">cmux alternative</a><a href="/warp-alternative">Warp alternative</a><a href="/herdr-alternative">herdr alternative</a>
+    </nav>
+    <p class="fineprint">omux is an independent project, not affiliated with or endorsed by Anthropic or OpenAI. Claude and Claude Code are trademarks of Anthropic; Codex is a trademark of OpenAI. Other product names belong to their owners; comparisons reflect their public documentation as of 2026-10-30 and may be out of date.</p>
+  </div>
+</footer>
+<script src="main.js" defer></script>
+</body>
+</html>

@@ -25,6 +25,47 @@ OMUX_FEATURES = [
 
 PAGES = [
     {
+        "slug": "terminal-alternative",
+        "other": "Terminal",
+        "other_url": "https://support.apple.com/guide/terminal/welcome/mac",
+        "title": "Terminal alternative for Claude Code and Codex on macOS: omux",
+        "meta": "Terminal alternative for running Claude Code and Codex: omux is a native macOS app that keeps every agent session in a sidebar with live status, Allow/Deny buttons, subagents, worktrees and conversations that resume. What Terminal and iTerm2 still do better, and where omux is.",
+        "h1": "Terminal alternative for running Claude Code and Codex on your Mac",
+        "intro": [
+            "Terminal, and iTerm2 for many people, is where Claude Code and Codex run by default: a tab per session, and you cycle through them to see which one has stopped to ask something. It works until the third or fourth session.",
+            "omux keeps the terminal and changes the thing around it. Each session is still a real terminal, but it lives under a project in a sidebar that shows whether the agent is working, waiting on you or done, with Allow and Deny right there. This page sets out what you keep, what you gain and what you give up.",
+        ],
+        "rows": [
+            ("What it is", "A session manager for coding agents, with a terminal in each session", "A general-purpose terminal"),
+            ("Runs on", "macOS", "Ships with macOS; iTerm2 is a free download"),
+            ("Knows what the agent is doing", "Yes: working, needs you, done, read from the agents' own signals", "No: a tab is a tab, and a bell at best"),
+            ("Answer a permission prompt", "Allow and Deny buttons under the session, from anywhere", "Find the tab and type"),
+            ("Subagents", "Listed under the session, transcripts in the side panel", "Not visible unless the agent prints them"),
+            ("Conversations after a relaunch", "Each session resumes its exact Claude or Codex conversation", "Reopen the tab and run claude --resume by hand"),
+            ("Git worktrees and pull requests", "One worktree per session, PR status, merge and clean up", "Manual"),
+            ("Diff, files and browser next to the agent", "Built-in panels, with review notes sent to the agent", "Other apps"),
+            ("Notifications", "When a session you aren't looking at needs you, with a sound", "Bell notifications only"),
+            ("Split panes, profiles, tmux integration", "No", "Yes, especially in iTerm2"),
+            ("Everyday shell work", "A plain shell session works, but it's not the focus", "Its whole purpose"),
+            ("Price and license", "Free, MIT", "Terminal is part of macOS; iTerm2 is free, GPL"),
+        ],
+        "better_other": [
+            "Most of your terminal time is ordinary shell work, not agents.",
+            "You want split panes, profiles, triggers, or tmux integration.",
+            "You're happy with one or two agent sessions and a tab for each.",
+        ],
+        "better_omux": [
+            "You run several Claude Code or Codex sessions and want to see which one needs you without cycling tabs.",
+            "You'd rather click Allow than hunt for the session that's asking.",
+            "You want each session to come back after a relaunch, with its own worktree and its diff beside it.",
+        ],
+        "faq": [
+            ("Do I stop using Terminal or iTerm2?", "No. Keep them for shell work. omux is for the sessions that run an agent; a plain shell session in omux is a normal login shell too, so you can do both in one window if you prefer."),
+            ("Does omux use its own terminal engine?", "It uses SwiftTerm, an open-source terminal emulator written in Swift. Claude Code and Codex render in it exactly as they do in Terminal."),
+            ("Can omux import my Terminal or iTerm2 profile?", "No. omux has its own themes and font settings in its preferences."),
+        ],
+    },
+    {
         "slug": "tmux-alternative",
         "other": "tmux",
         "other_url": "https://github.com/tmux/tmux",
@@ -194,7 +235,7 @@ PAGES = [
     },
 ]
 
-GLANCE = {'tmux-alternative': [('Native macOS app', True, False), ('Runs on Linux and over SSH', False, True), ('Agent status and Allow/Deny', True, False), ('Resumes agent conversations', True, 'partial'), ('Worktrees and pull requests', True, False), ('Split panes', False, True), ('Detach and reattach', False, True), ('Free and open source', True, True)], 'cmux-alternative': [('Native macOS app', True, True), ("Status from the agents' own protocols", True, False), ('Allow/Deny buttons', True, False), ('Subagent transcripts', True, 'partial'), ('Worktrees with PR merge and cleanup', True, 'partial'), ('Split panes', False, True), ('SSH workspaces', False, True), ('CLI and socket API', False, True), ('Free and open source', True, True)], 'warp-alternative': [('No account or credits', True, False), ('Runs your own Claude Code and Codex', True, True), ('Agent status and Allow/Deny', True, 'partial'), ('Worktrees and pull requests', True, False), ('Cloud and scheduled agents', False, True), ('Cross-platform', False, True), ('No telemetry', True, False), ('Free and open source', True, 'partial')], 'herdr-alternative': [('Native macOS window', True, False), ('Linux, Windows and remote machines', False, True), ('Agent status', True, True), ('Allow/Deny buttons', True, False), ('Subagent transcripts', True, False), ('Detach and reattach', False, True), ('Agents controlling the tool via API', False, True), ('Worktrees and pull requests', True, False), ('Free and open source', True, True)]}
+GLANCE = {'terminal-alternative': [('Ships with macOS', False, True), ('Agent status and Allow/Deny', True, False), ('Subagent transcripts', True, False), ('Resumes agent conversations', True, False), ('Worktrees and pull requests', True, False), ('Notifications when an agent needs you', True, 'partial'), ('Split panes and profiles', False, True), ('Free and open source', True, 'partial')], 'tmux-alternative': [('Native macOS app', True, False), ('Runs on Linux and over SSH', False, True), ('Agent status and Allow/Deny', True, False), ('Resumes agent conversations', True, 'partial'), ('Worktrees and pull requests', True, False), ('Split panes', False, True), ('Detach and reattach', False, True), ('Free and open source', True, True)], 'cmux-alternative': [('Native macOS app', True, True), ("Status from the agents' own protocols", True, False), ('Allow/Deny buttons', True, False), ('Subagent transcripts', True, 'partial'), ('Worktrees with PR merge and cleanup', True, 'partial'), ('Split panes', False, True), ('SSH workspaces', False, True), ('CLI and socket API', False, True), ('Free and open source', True, True)], 'warp-alternative': [('No account or credits', True, False), ('Runs your own Claude Code and Codex', True, True), ('Agent status and Allow/Deny', True, 'partial'), ('Worktrees and pull requests', True, False), ('Cloud and scheduled agents', False, True), ('Cross-platform', False, True), ('No telemetry', True, False), ('Free and open source', True, 'partial')], 'herdr-alternative': [('Native macOS window', True, False), ('Linux, Windows and remote machines', False, True), ('Agent status', True, True), ('Allow/Deny buttons', True, False), ('Subagent transcripts', True, False), ('Detach and reattach', False, True), ('Agents controlling the tool via API', False, True), ('Worktrees and pull requests', True, False), ('Free and open source', True, True)]}
 
 def esc(s): return html.escape(s, quote=False)
 
