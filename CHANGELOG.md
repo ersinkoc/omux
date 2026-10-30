@@ -2,6 +2,23 @@
 
 All notable changes to omux are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## [0.4.0] - 2026-10-30
+
+### Added
+
+- **Codex sessions.** A project or session can run [Codex](https://developers.openai.com/codex/cli) instead of Claude Code: pick the agent in the project or session settings, in the worktree sheet, or with File › New Codex Session. omux starts a private Codex app-server per session, so a Codex session keeps its conversation across relaunches, shows its status, Allow/Deny for command and file-change approvals, its subagents and their transcripts, recent Codex conversations (⇧⌘O) and Codex usage limits. Needs Codex CLI 0.165 or later as `codex`. ([#7](https://github.com/onurozcan/omux/pull/7))
+- **Beta builds.** `./build.sh --beta` installs "omux Beta" next to the release app, with its own preferences and workspace, for trying a branch. It starts with the release app's settings.
+
+### Changed
+
+- Pressing ▶ on a Claude session that has no conversation yet starts one pinned to the session's id, instead of continuing the folder's most recent conversation.
+
+### Fixed
+
+- The sidebar's new session, open folder, recent conversations and settings buttons didn't respond to clicks: the session list extended up under them.
+- The session header and the right panel's tabs sat below the title bar instead of level with the sidebar's buttons.
+- 0.3.0 kept an invisible window toolbar so the window buttons show on every macOS version, which pushed the content down. The toolbar is hidden again and the buttons are kept visible directly.
+
 ## [0.3.0] - 2026-10-29
 
 ### Added
@@ -41,6 +58,7 @@ First public release.
 - Recent Claude conversations (⇧⌘O), Claude plan usage limits in the sidebar, themes, terminal font settings and a quick switcher (⌘K).
 - Open folders from Finder's "Open in omux" service, the Dock icon or `open -a omux <folder>`.
 
+[0.4.0]: https://github.com/onurozcan/omux/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/onurozcan/omux/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/onurozcan/omux/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/onurozcan/omux/releases/tag/v0.1.0

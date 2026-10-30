@@ -14,7 +14,7 @@ Built with SwiftUI and [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm).
 - **Live status.** Each session shows whether its agent is working, needs you or is done, and the Dock badge counts sessions waiting on you.
 - **Notifications.** When a session you aren't looking at needs you, omux posts a macOS notification; clicking it opens the session. Notifications for finished sessions are optional. Programs can send their own with OSC 9 or OSC 777: set Claude Code's notification channel to `ghostty` (in `/config`) to get its notifications, and its plugins', this way. Turn each kind on or off in Settings › Notifications.
 - **Allow or deny from the sidebar.** Claude tool permissions and Codex command/file-change approvals can be answered in the sidebar or header. Codex's info button shows the requested command or reason. Other Codex permission forms and questions are answered in its terminal.
-- **Subagents.** While Claude runs subagents, the selected session lists them in the sidebar with what each one is doing; other sessions show a count. The header's agents button lists them all, and clicking one opens its transcript in the right panel.
+- **Subagents.** While Claude Code or Codex runs subagents, the selected session lists them in the sidebar with what each one is doing; other sessions show a count. The header's agents button lists them all, and clicking one opens its transcript in the right panel.
 - **Worktree sessions** (⌥⌘T). A session can get its own Git branch and folder (`<repo>.worktrees/<branch>` next to the repo), so parallel sessions don't touch each other's files. Turn it on per project to make it the default. Right-click a worktree session to create a pull request, merge it into its base branch or open its folder; closing one asks whether to keep or delete the worktree.
 - **Pull request status.** With the [GitHub CLI](https://cli.github.com) installed, a worktree session whose branch has a pull request shows its number and state in the sidebar and header: checks running or failing, changes requested, approved or merged. Click the header chip to see each check and open it on GitHub. The session asks for your attention when checks start failing, a review comes in or the pull request is merged. Once it's merged, the session offers to delete its worktree and branch.
 - **Right panel** (⌥⌘F), with three tabs:
@@ -31,7 +31,7 @@ Built with SwiftUI and [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm).
 - macOS 14 or later
 - Swift 5.9 or later (Xcode 15+ or the Command Line Tools)
 - [Claude Code](https://claude.com/claude-code) installed as `claude` for Claude sessions; plain shell sessions work without it
-- Codex CLI **0.165.0 or later** installed as `codex` for managed Codex sessions. Version 0.165.0 is the tested version; the app-server/WebSocket integration is experimental.
+- Codex CLI **0.165.0 or later** installed as `codex` for managed Codex sessions. Tested with 0.166.0; the app-server integration is experimental on the Codex side.
 
 ## Codex sessions
 
@@ -43,8 +43,6 @@ Codex permits one writing app-server per conversation. A conversation currently 
 
 Codex subagents appear in the sidebar/header. Their preview shows up to 100 recent protocol items. Review notes and browser picks are pasted into the selected session's prompt. Managed sessions use the Codex provider selection; custom wrappers remain terminal commands.
 
-See [the implementation plan and verification status](docs/codex-support-plan.md) for the checks completed and remaining manual validation.
-
 ## Build
 
 ```sh
@@ -54,18 +52,24 @@ open /Applications/omux.app
 
 `build.sh` builds a release binary, assembles `build/omux.app`, and then **replaces `/Applications/omux.app`** so the Finder service and Dock entry stay registered. It signs with the first "Apple Development" certificate in your keychain, or ad hoc if there is none.
 
+```sh
+./build.sh --beta
+```
+
+builds and installs **omux Beta** next to the release app instead, with its own bundle id, preferences and workspace, so you can try a branch without touching your sessions. On its first launch it copies the release app's settings.
+
 ## Keyboard shortcuts
 
 | Action | Shortcut |
 | --- | --- |
 | New session / new shell / new project | ⌘T / ⇧⌘T / ⇧⌘N |
 | New session in a worktree | ⌥⌘T |
-| Open folder / recent Claude conversation | ⌘O / ⇧⌘O |
+| Open folder / recent conversation | ⌘O / ⇧⌘O |
 | Close session | ⌘W |
 | Rename / edit session | ⌘R / ⌘I |
 | Restart session | ⇧⌘R |
 | Interrupt (Ctrl-C) | ⇧⌘. |
-| Continue Claude conversation | ⇧⌘↩ |
+| Start or continue the session | ⇧⌘↩ |
 | Jump to session | ⌘K |
 | Next / previous session | ⇧⌘] / ⇧⌘[ |
 | Session 1–9 in the current project | ⌘1 … ⌘9 |
