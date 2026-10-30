@@ -127,7 +127,8 @@ final class PullRequestMonitor: ObservableObject {
 
     private func apply(_ found: [UUID: Lookup]) {
         var result: [UUID: PullRequest] = [:]
-        for (id, lookup) in found {
+        // Tabs closed while gh ran.
+        for (id, lookup) in found where Store.shared.tab(id) != nil {
             switch lookup {
             case .found(let pr):
                 if let old = requests[id], pr.needsAttention(since: old) { Store.shared.requestAttention(id) }

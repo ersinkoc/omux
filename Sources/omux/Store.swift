@@ -592,6 +592,8 @@ final class Store: ObservableObject {
     /// Flags a session for something that happened outside its terminal, like its pull
     /// request's checks failing.
     func requestAttention(_ id: UUID) {
+        // A late result for a closed tab would leave a badge nothing can clear.
+        guard tab(id) != nil else { return }
         if !isWatching(id) { update(id) { $0.needsAttention = true } }
     }
 
