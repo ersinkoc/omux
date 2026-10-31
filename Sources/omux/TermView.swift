@@ -98,24 +98,32 @@ final class TermView: LocalProcessTerminalView {
         }
     }
 
-    /// ⌘-click: file paths go to the preview panel, everything else (URLs) to the system.
+    /// ⌘-click: file paths go to the preview panel, folders (app bundles too) are shown in
+    /// Finder rather than opened, everything else (URLs) goes to the system.
     override func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
         if let path = Self.filePath(from: link) {
             emit(.openPath(path))
+        } else if let folder = Self.filePath(from: link, folders: true) {
+            NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: folder)])
         } else {
             super.requestOpenLink(source: source, link: link, params: params)
         }
     }
 
-    nonisolated static func filePath(from link: String) -> String? {
+    nonisolated static func filePath(from link: String, folders: Bool = false) -> String? {
         var raw = link.trimmingCharacters(in: .whitespaces)
         if raw.hasPrefix("file://"), let url = URL(string: raw) { raw = url.path }
         guard raw.hasPrefix("/") || raw.hasPrefix("~") else { return nil }
         // Drop trailing punctuation Claude's prose leaves on paths.
         while let last = raw.last, ".,:;)]}'\"".contains(last) { raw.removeLast() }
-        let path = (raw as NSString).expandingTildeInPath
+        var path = (raw as NSString).expandingTildeInPath
+        // "Foo.swift:12" and "Foo.swift:12:4", as compilers and agents print locations.
+        if !FileManager.default.fileExists(atPath: path),
+           let location = path.range(of: #":[0-9]+(:[0-9]+)?\z"#, options: .regularExpression) {
+            path = String(path[..<location.lowerBound])
+        }
         var isDir: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: path, isDirectory: &isDir), !isDir.boolValue else { return nil }
+        guard FileManager.default.fileExists(atPath: path, isDirectory: &isDir), isDir.boolValue == folders else { return nil }
         return path
     }
 
