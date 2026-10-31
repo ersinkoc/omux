@@ -56,6 +56,7 @@ extension Store {
         if let pr = PullRequestMonitor.shared.requests[id], pr.state == .merged {
             // A squash or rebase merge leaves the branch's commits "not in" the base.
             alert.informativeText = "Its pull request #\(pr.number) was merged."
+                + commitsAfterMerge(worktree, pr: pr)
                 + (dirty > 0 ? " The worktree has \(dirty) uncommitted file\(dirty == 1 ? "" : "s")." : "")
         } else {
             alert.informativeText = facts.isEmpty
@@ -82,17 +83,29 @@ extension Store {
         guard let tab = tab(id), let worktree = tab.worktree, let path = directory(of: tab),
               FileManager.default.fileExists(atPath: path) else { return }
         let dirty = Git.run(["status", "--porcelain"], in: path).out.split(separator: "\n").count
-        let number = PullRequestMonitor.shared.requests[id].map { " in #\($0.number)" } ?? ""
+        let pr = PullRequestMonitor.shared.requests[id]
+        let number = pr.map { " in #\($0.number)" } ?? ""
 
         let alert = NSAlert()
         alert.messageText = "Delete the worktree for “\(tab.name)”?"
         alert.informativeText = "“\(worktree.branch)” was merged\(number). This closes the session and deletes its worktree and local branch."
+            + (pr.map { commitsAfterMerge(worktree, pr: $0) } ?? "")
             + (dirty > 0 ? " \(dirty) uncommitted file\(dirty == 1 ? "" : "s") will be lost." : "")
         let delete = alert.addButton(withTitle: "Delete Worktree and Branch")
         delete.hasDestructiveAction = true
         alert.addButton(withTitle: "Cancel")
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         closeAndDeleteWorktree(id, worktree: worktree, path: path)
+    }
+
+    /// Commits on the branch that the merged pull request doesn't hold, e.g. made after the
+    /// merge, which deleting the branch would lose. Unknown when git doesn't have its last commit.
+    private func commitsAfterMerge(_ worktree: Worktree, pr: PullRequest) -> String {
+        switch pr.head.flatMap({ Git.commitCount(after: $0, on: worktree.branch, in: worktree.repo) }) {
+        case 0: return ""
+        case let count?: return " “\(worktree.branch)” has \(count) commit\(count == 1 ? "" : "s") that \(count == 1 ? "isn't" : "aren't") in it."
+        case nil: return " Commits on “\(worktree.branch)” couldn't be compared with it."
+        }
     }
 
     private func closeAndDeleteWorktree(_ id: UUID, worktree: Worktree, path: String) {
