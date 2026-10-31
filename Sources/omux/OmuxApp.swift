@@ -137,24 +137,64 @@ struct SettingsView: View {
 /// Keeps the close, minimize and zoom buttons visible while the toolbar is hidden. Hiding the
 /// window toolbar removes them on some macOS versions; keeping the toolbar instead leaves an
 /// invisible strip that pushes the content down and swallows clicks on the sidebar's buttons.
+/// Closing this (the main) window quits omux, so its sessions don't keep running in the background.
 private struct WindowChrome: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async { Self.configure(view.window) }
-        return view
+    func makeNSView(context: Context) -> ChromeView { ChromeView() }
+
+    func updateNSView(_ view: ChromeView, context: Context) {
+        DispatchQueue.main.async { ChromeView.configure(view.window) }
     }
 
-    func updateNSView(_ view: NSView, context: Context) {
-        DispatchQueue.main.async { Self.configure(view.window) }
-    }
+    final class ChromeView: NSView {
+        private var observers: [NSObjectProtocol] = []
 
-    private static func configure(_ window: NSWindow?) {
-        guard let window else { return }
-        window.styleMask.formUnion([.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView])
-        window.titlebarAppearsTransparent = true
-        window.titleVisibility = .hidden
-        for button in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
-            window.standardWindowButton(button)?.isHidden = false
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            observers.forEach(NotificationCenter.default.removeObserver)
+            observers = []
+            guard let window else { return }
+            DispatchQueue.main.async { Self.configure(window) }
+            // SwiftUI hides the buttons again whenever it updates the window, which happens at no
+            // fixed moment (switching sessions, opening panels, resizing). didUpdate comes after every
+            // event the window handles, and configure only writes what has changed, so it stays cheap.
+            let refresh: [Notification.Name] = [NSWindow.didUpdateNotification, NSWindow.didBecomeKeyNotification,
+                                                NSWindow.didResizeNotification, NSWindow.didExitFullScreenNotification]
+            for name in refresh {
+                observers.append(NotificationCenter.default.addObserver(forName: name, object: window, queue: .main) { [weak window] _ in
+                    MainActor.assumeIsolated { Self.configure(window) }
+                })
+            }
+            observers.append(NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { _ in
+                MainActor.assumeIsolated { AppDelegate.mainWindowWillClose() }
+            })
+        }
+
+        deinit { observers.forEach(NotificationCenter.default.removeObserver) }
+
+        static func configure(_ window: NSWindow?) {
+            guard let window else { return }
+            let style: NSWindow.StyleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+            if !window.styleMask.isSuperset(of: style) { window.styleMask.formUnion(style) }
+            if !window.titlebarAppearsTransparent { window.titlebarAppearsTransparent = true }
+            if window.titleVisibility != .hidden { window.titleVisibility = .hidden }
+            // In full screen macOS slides the title bar in and out itself; forcing it visible there
+            // would pin it over the sessions.
+            let fullScreen = window.styleMask.contains(.fullScreen)
+            let frameView = window.contentView?.superview
+            for type in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
+                guard let button = window.standardWindowButton(type) else { continue }
+                if button.isHidden { button.isHidden = false }
+                if button.alphaValue < 1 { button.alphaValue = 1 }
+                guard !fullScreen else { continue }
+                // Hiding the window toolbar can hide the title bar view that holds the buttons, so
+                // showing the buttons alone isn't enough. Walk up to the window's frame view.
+                var parent = button.superview
+                while let view = parent, view !== frameView {
+                    if view.isHidden { view.isHidden = false }
+                    if view.alphaValue < 1 { view.alphaValue = 1 }
+                    parent = view.superview
+                }
+            }
         }
     }
 }
@@ -397,6 +437,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
+    /// Closing the main window quits omux, which stops every session, instead of leaving them
+    /// running with no window. If the quit is cancelled in the confirmation, the window comes back.
+    @MainActor static func mainWindowWillClose() {
+        DispatchQueue.main.async {
+            NSApp.terminate(nil)
+            // Still here: the quit was cancelled.
+            openWindow?(id: "main")
+        }
+    }
 
     /// Folders dropped on the Dock icon, opened via Finder's "Open With", or `open -a omux <dir>`.
     func application(_ application: NSApplication, open urls: [URL]) {
