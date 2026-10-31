@@ -170,7 +170,8 @@ struct TabEditSheet: View {
 
     private func save() {
         store.updateTab(tabID) { tab in
-            tab.name = name.trimmingCharacters(in: .whitespaces).isEmpty ? tab.name : name
+            let trimmed = name.trimmingCharacters(in: .whitespaces)
+            if !trimmed.isEmpty, trimmed != tab.name { tab.name = trimmed; tab.autoName = false }
             tab.directory = directory.isEmpty ? nil : directory
             switch mode {
             case .inherit: tab.command = nil; tab.provider = nil
