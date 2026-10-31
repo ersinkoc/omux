@@ -324,16 +324,34 @@ final class AgentTranscript: ObservableObject {
                 let message = object["message"] as? [String: Any]
                 switch object["type"] as? String {
                 case "user":
+                    // Claude Code's own reminders and notices, not the agent's conversation.
+                    if object["isMeta"] as? Bool == true { continue }
                     if let items = message?["content"] as? [[String: Any]] {
-                        for item in items where item["type"] as? String == "tool_result" {
-                            let text = Transcript.text(of: item["content"]).trimmingCharacters(in: .whitespacesAndNewlines)
-                            events.append(.result(id: item["tool_use_id"] as? String ?? "", text: text, error: item["is_error"] as? Bool ?? false))
+                        for item in items {
+                            switch item["type"] as? String {
+                            case "tool_result":
+                                let text = Transcript.text(of: item["content"]).trimmingCharacters(in: .whitespacesAndNewlines)
+                                events.append(.result(id: item["tool_use_id"] as? String ?? "", text: text, error: item["is_error"] as? Bool ?? false))
+                            case "text" where !sawTask:
+                                // A fork's directive comes after the result of the call that started
+                                // it, behind boilerplate every fork shares.
+                                var text = item["text"] as? String ?? ""
+                                if let end = text.range(of: "</fork-boilerplate>") { text = String(text[end.upperBound...]) }
+                                text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                                guard !text.isEmpty else { continue }
+                                events.append(.task(text))
+                                sawTask = true
+                            default:
+                                break
+                            }
                         }
                     } else if let text = message?["content"] as? String, !text.isEmpty {
                         events.append(sawTask ? .text(text) : .task(text))
                         sawTask = true
                     }
                 case "assistant":
+                    // A fork's transcript opens with its parent's call that spawned it.
+                    guard sawTask else { continue }
                     for item in message?["content"] as? [[String: Any]] ?? [] {
                         switch item["type"] as? String {
                         case "text":
