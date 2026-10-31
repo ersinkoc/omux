@@ -52,6 +52,8 @@ final class Store: ObservableObject {
 
     private var terminals: [UUID: TermView] = [:]
     private var codexStarts: [UUID: Task<Void, Never>] = [:]
+    /// Sessions whose startup command is about to be typed; Start would type it a second time.
+    private var pendingCommands: [UUID: UUID] = [:]
     /// A worktree setup command to run before a new Codex session's TUI starts.
     private var codexSetup: [UUID: String] = [:]
     private var cancellables = Set<AnyCancellable>()
@@ -235,7 +237,10 @@ final class Store: ObservableObject {
         if provider == .codex, command == nil {
             startCodex(view, tab: tab, cwd: dir)
         } else if let command = command ?? startupCommand(tab: tab, group: group), !command.isEmpty {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            let token = UUID()
+            pendingCommands[tab.id] = token
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                if self?.pendingCommands[tab.id] == token { self?.pendingCommands[tab.id] = nil }
                 view.send(txt: command + "\n")
             }
         }
@@ -393,7 +398,7 @@ final class Store: ObservableObject {
 
     /// Starts the selected provider in an idle shell or resumes its exact saved chat.
     func start(_ id: UUID) {
-        guard let loc = location(of: id) else { return }
+        guard let loc = location(of: id), pendingCommands[id] == nil else { return }
         let tab = groups[loc.group].tabs[loc.tab]
         if let view = terminals[id], !(runtime[id]?.exited ?? true) {
             if runtime[id]?.provider == .codex, runtime[id]?.statusState == .error,
