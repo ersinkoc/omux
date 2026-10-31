@@ -121,7 +121,15 @@ enum Git {
 
     /// Creates the worktree, reusing the branch when it already exists.
     static func addWorktree(repo: String, branch: String, base: String) -> Result {
+        // git builds `git branch <branch> <base>` from these, so "-D" would delete the base.
+        guard !branch.hasPrefix("-"), run(["check-ref-format", "--branch", branch], in: repo).ok else {
+            return Result(status: 1, out: "", err: "“\(branch)” isn't a valid branch name.")
+        }
         let path = worktreePath(repo: repo, branch: branch)
+        // "a/b" and "a-b" share a folder; git would create the branch before refusing it.
+        if let items = try? FileManager.default.contentsOfDirectory(atPath: path), !items.isEmpty {
+            return Result(status: 1, out: "", err: "\(path) is already in use. Pick another branch name.")
+        }
         try? FileManager.default.createDirectory(atPath: (path as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
         if branches(repo).contains(branch) {
             return run(["worktree", "add", path, branch], in: repo)
