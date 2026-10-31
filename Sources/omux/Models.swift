@@ -44,9 +44,12 @@ struct TabItem: Identifiable, Codable, Hashable {
     var codexThreadID: String?
     /// Set when the session runs in its own git worktree; `directory` is the worktree.
     var worktree: Worktree?
+    /// The name follows the title Claude Code gives the conversation until the session is renamed.
+    var autoName: Bool
 
     init(name: String, directory: String? = nil, command: String? = nil, worktree: Worktree? = nil) {
         self.name = name
+        self.autoName = Self.isDefaultName(name)
         self.directory = directory
         self.command = command
         self.worktree = worktree
@@ -65,6 +68,25 @@ struct TabItem: Identifiable, Codable, Hashable {
         claudeSessionID = try c.decodeIfPresent(UUID.self, forKey: .claudeSessionID) ?? UUID()
         codexThreadID = try c.decodeIfPresent(String.self, forKey: .codexThreadID)
         worktree = try c.decodeIfPresent(Worktree.self, forKey: .worktree)
+        autoName = try c.decodeIfPresent(Bool.self, forKey: .autoName) ?? Self.isDefaultName(name)
+    }
+
+    /// A name omux made up, such as "Session 3", as opposed to one the user chose.
+    static func isDefaultName(_ name: String) -> Bool {
+        guard name.hasPrefix("Session") else { return false }
+        let number = name.dropFirst("Session".count)
+        return number.isEmpty || (number.first == " " && number.count > 1
+            && number.dropFirst().allSatisfy { $0.isASCII && $0.isNumber })
+    }
+
+    /// The conversation's topic from a terminal title Claude Code sets, without its status
+    /// glyph ("✳ Fix login bug" → "Fix login bug"). nil for titles that aren't a topic.
+    static func name(fromTitle title: String) -> String? {
+        let topic = String(title.drop { !$0.isLetter && !$0.isNumber })
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !topic.isEmpty, topic.count <= 80, topic.caseInsensitiveCompare("Claude Code") != .orderedSame,
+              topic.caseInsensitiveCompare("claude") != .orderedSame else { return nil }
+        return topic
     }
 
     func resolvedProvider(in group: TabGroup) -> SessionProvider {

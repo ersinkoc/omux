@@ -528,6 +528,10 @@ final class Store: ObservableObject {
                 if $0.title != title, !isWatching(id) { $0.hasActivity = true }
                 $0.title = title
             }
+            if runtime[id]?.provider == .claude, tab(id)?.autoName == true,
+               let name = TabItem.name(fromTitle: title), tab(id)?.name != name {
+                updateTab(id) { $0.name = name }
+            }
         case .directory(let dir):
             update(id) { $0.cwd = dir }
         case .exited:
@@ -691,6 +695,7 @@ final class Store: ObservableObject {
         guard !trimmed.isEmpty else { return }
         if let loc = location(of: id) {
             groups[loc.group].tabs[loc.tab].name = trimmed
+            groups[loc.group].tabs[loc.tab].autoName = false
         } else if let gi = groups.firstIndex(where: { $0.id == id }) {
             groups[gi].name = trimmed
         }
