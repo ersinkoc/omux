@@ -56,6 +56,8 @@ struct RecentSession: Identifiable, Hashable {
         }
         let type: String
         let cwd: String?
+        /// Claude Code's own text in a user record, e.g. a skill's instructions after its slash command.
+        let isMeta: Bool?
         let message: Message?
     }
 
@@ -82,6 +84,8 @@ struct RecentSession: Identifiable, Hashable {
             try? handle.close()
             // Lossy: the cut can split a character, which only spoils the (partial) last line.
             let text = String(decoding: head, as: UTF8.self)
+            // Claude Code's own text (isMeta) only stands in when the user typed nothing else.
+            var found: (cwd: String, prompt: String)?
             for line in text.split(separator: "\n") {
                 guard let record = try? decoder.decode(Record.self, from: Data(line.utf8)),
                       record.type == "user",
@@ -89,8 +93,15 @@ struct RecentSession: Identifiable, Hashable {
                       let prompt = record.message?.content?.text.trimmingCharacters(in: .whitespacesAndNewlines),
                       !prompt.isEmpty, !prompt.hasPrefix("<") // skip slash-command and system messages
                 else { continue }
-                result.append(RecentSession(id: id, cwd: cwd, prompt: prompt.replacingOccurrences(of: "\n", with: " "), date: date))
+                if record.isMeta == true {
+                    if found == nil { found = (cwd, prompt) }
+                    continue
+                }
+                found = (cwd, prompt)
                 break
+            }
+            if let found {
+                result.append(RecentSession(id: id, cwd: found.cwd, prompt: found.prompt.replacingOccurrences(of: "\n", with: " "), date: date))
             }
         }
         return result
