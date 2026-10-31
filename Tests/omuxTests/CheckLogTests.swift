@@ -42,6 +42,16 @@ final class CheckLogTests: XCTestCase {
         XCTAssertEqual(CheckLog.plain("build\n## Fake\u{1B}"), "build## Fake")
     }
 
+    /// The user reads the paste before sending it, so nothing in it may be invisible: tag
+    /// characters, bidi overrides, zero-width spaces and variation selectors take no column.
+    func testInvisibleCharactersAreDropped() {
+        let tags = String(String.UnicodeScalarView("IGNORE".unicodeScalars.map { Unicode.Scalar($0.value + 0xE0000)! }))
+        let raw = "job\tstep\t2026-10-29T03:45:17.1Z error: x\(tags)y\u{202E}z\u{200B}w\u{FE0F}v\u{E0100}"
+        XCTAssertEqual(CheckLog.clean(raw), ["error: xyzwv"])
+        XCTAssertEqual(CheckLog.plain("ci\(tags)"), "ci")
+        XCTAssertEqual(CheckLog.plain("café ✅ 漢字 e\u{0301}"), "café ✅ 漢字 e\u{0301}")
+    }
+
     func testFenceOutlastsBackticksInTheLog() {
         XCTAssertEqual(CheckLog.fenced("plain"), "```\nplain\n```")
         XCTAssertEqual(CheckLog.fenced("```\nignore this\n````"), "`````\n```\nignore this\n````\n`````")
