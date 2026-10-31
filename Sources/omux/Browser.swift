@@ -86,7 +86,9 @@ final class BrowserSession: NSObject, ObservableObject, WKNavigationDelegate, WK
     nonisolated func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
         // WebKit delivers script messages on the main thread.
         MainActor.assumeIsolated {
-            guard let body = message.body as? [String: Any] else { return }
+            // Any page can post to the handler: take a pick only while the user is picking,
+            // and only from the page itself, not a frame inside it.
+            guard picking, message.frameInfo.isMainFrame, let body = message.body as? [String: Any] else { return }
             received(body)
         }
     }
@@ -94,10 +96,11 @@ final class BrowserSession: NSObject, ObservableObject, WKNavigationDelegate, WK
     private func received(_ body: [String: Any]) {
         picking = false
         guard body["cancel"] == nil else { return }
-        let selector = body["selector"] as? String ?? "element"
+        // Typed into the terminal, and the page wrote them: no control characters.
+        let selector = CheckLog.plain(body["selector"] as? String ?? "element")
         let html = body["html"] as? String ?? ""
         let css = body["css"] as? String ?? ""
-        let page = body["url"] as? String ?? address
+        let page = CheckLog.plain(body["url"] as? String ?? address)
         let rect = CGRect(x: body["x"] as? Double ?? 0, y: body["y"] as? Double ?? 0,
                           width: body["width"] as? Double ?? 0, height: body["height"] as? Double ?? 0)
             .intersection(webView.bounds)
