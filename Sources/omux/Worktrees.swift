@@ -83,13 +83,12 @@ extension Store {
         guard let tab = tab(id), let worktree = tab.worktree, let path = directory(of: tab),
               FileManager.default.fileExists(atPath: path) else { return }
         let dirty = Git.run(["status", "--porcelain"], in: path).out.split(separator: "\n").count
-        let pr = PullRequestMonitor.shared.requests[id]
-        let number = pr.map { " in #\($0.number)" } ?? ""
+        let number = PullRequestMonitor.shared.requests[id].map { " in #\($0.number)" } ?? ""
 
         let alert = NSAlert()
         alert.messageText = "Delete the worktree for “\(tab.name)”?"
         alert.informativeText = "“\(worktree.branch)” was merged\(number). This closes the session and deletes its worktree and local branch."
-            + (pr.map { commitsAfterMerge(worktree, pr: $0) } ?? "")
+            + (PullRequestMonitor.shared.requests[id].map { commitsAfterMerge(worktree, pr: $0) } ?? "")
             + (dirty > 0 ? " \(dirty) uncommitted file\(dirty == 1 ? "" : "s") will be lost." : "")
         let delete = alert.addButton(withTitle: "Delete Worktree and Branch")
         delete.hasDestructiveAction = true
