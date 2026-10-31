@@ -2,6 +2,36 @@
 
 All notable changes to omux are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## [0.8.0] - 2026-10-31
+
+### Added
+
+- **Sessions named after their conversation.** A session that still has a made-up name ("Session 3") takes the topic Claude Code gives the conversation, the way iTerm shows it in the tab. Renaming a session, in the sidebar or the Edit Session sheet, keeps your name from then on. ([#41](https://github.com/onurozcan/omux/pull/41))
+- **Close a session from the sidebar.** Hovering a session row turns its status dot into a close button. Worktree sessions still ask before closing. ([#42](https://github.com/onurozcan/omux/pull/42))
+- **⌘-click on `Foo.swift:12:4`** opens the file in the preview, the way plain paths do, instead of handing it to the default editor. ([#39](https://github.com/onurozcan/omux/pull/39))
+
+### Changed
+
+- **Closing the main window quits omux**, with the usual confirmation, instead of leaving every session running with no window. The close, minimize and zoom buttons also stay visible on newer macOS, where hiding the toolbar hid them too. ([#43](https://github.com/onurozcan/omux/pull/43))
+- **Claude Code and Codex no longer start on their own in the home folder.** An agent started in `~` treats all of it as its project and reads Downloads, Documents, Pictures and Music, so macOS asked for access to each in omux's name. A session without a project folder now opens a shell and shows a banner pointing to Edit Session; starting the agent by hand still works. ([#45](https://github.com/onurozcan/omux/pull/45))
+- **Allow picks Claude Code's "Yes"** wherever the highlight is in the prompt. It used to press Return, which took the highlighted row, so a moved highlight could switch the session to "accept edits" or deny the tool. Allow and Deny now appear only for tool prompts, not for plan approval or peer messages, whose first option isn't a plain yes. ([#36](https://github.com/onurozcan/omux/pull/36))
+- Review notes that couldn't be sent because the session isn't running are kept, with a banner, instead of dropped. ([#28](https://github.com/onurozcan/omux/pull/28))
+- A ⌘-clicked folder or app bundle is shown in Finder instead of opened. ([#39](https://github.com/onurozcan/omux/pull/39))
+
+### Fixed
+
+- A worktree branch name starting with `-`, such as `-D`, made git run `git branch -D <base>` and delete the base branch. Names git rejects are refused before anything runs, and a branch whose folder is already in use (`feat/x` and `feat-x` share one) no longer leaves a stray branch behind. ([#26](https://github.com/onurozcan/omux/pull/26))
+- The browser's element picker accepted messages from any page or frame at any time and typed them into the session. It now takes a pick only while you're picking, from the page itself, with control characters removed. ([#34](https://github.com/onurozcan/omux/pull/34))
+- A file name with a newline in it could end the typed line and run what followed: in review notes, where the name comes from git, and in files dropped or pasted into a session. Both are escaped now. ([#35](https://github.com/onurozcan/omux/pull/35), [#38](https://github.com/onurozcan/omux/pull/38))
+- Invisible Unicode (tag characters, bidi overrides, zero-width spaces, variation selectors) is removed from pasted check logs, so what you read before sending is what the agent gets. ([#40](https://github.com/onurozcan/omux/pull/40))
+- A double-click on Codex's Allow also accepted the next pending approval, which you hadn't seen. The buttons now answer only the request they showed. ([#37](https://github.com/onurozcan/omux/pull/37))
+- Recent Conversations titled a session started with a skill's slash command after the skill's instructions ("Base directory for this skill: …") instead of what you typed. ([#27](https://github.com/onurozcan/omux/pull/27))
+- A pull request result arriving for a session closed while gh ran left a Dock badge nothing could clear. ([#29](https://github.com/onurozcan/omux/pull/29))
+- Saving the Edit Session sheet put a Codex session's thread back to the one from when the sheet opened, so a restart resumed the wrong conversation. The ids are written only when "Start a fresh conversation" was pressed. ([#30](https://github.com/onurozcan/omux/pull/30))
+- Pressing Start right after New Session or Restart typed the startup command twice, and the second copy became the agent's first prompt. ([#31](https://github.com/onurozcan/omux/pull/31))
+- Subagent transcripts showed Claude Code's own reminders as agent text, and forks had no task line. ([#32](https://github.com/onurozcan/omux/pull/32))
+- The byte order mark gh puts before a failed log's first line kept that line's timestamp and `##[group]` marker in the pasted log. ([#33](https://github.com/onurozcan/omux/pull/33))
+
 ## [0.7.0] - 2026-10-30
 
 ### Added

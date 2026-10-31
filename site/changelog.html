@@ -41,11 +41,43 @@
     <h1>Changelog</h1>
     <p class="lede muted">What changed in each release, newest first. Versions follow <a href="https://semver.org">semantic versioning</a>; the source is <a href="https://github.com/onurozcan/omux/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
 <div class="timeline">
+<article class="release" id="v0.8.0">
+  <div class="release-rail"><span class="node"></span></div>
+  <div class="release-meta">
+    <h2><a href="#v0.8.0">0.8.0</a></h2>
+    <span class="badge badge-latest">Latest</span>
+    <p><time datetime="2026-10-31">October 31, 2026</time></p>
+    <p><a href="https://github.com/onurozcan/omux/releases/tag/v0.8.0">Release on GitHub</a></p>
+  </div>
+  <div class="release-body">
+<ul class="entries">
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Sessions named after their conversation.</strong> A session that still has a made-up name ("Session 3") takes the topic Claude Code gives the conversation, the way iTerm shows it in the tab. Renaming a session, in the sidebar or the Edit Session sheet, keeps your name from then on. (<a href="https://github.com/onurozcan/omux/pull/41">#41</a>)</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>Close a session from the sidebar.</strong> Hovering a session row turns its status dot into a close button. Worktree sessions still ask before closing. (<a href="https://github.com/onurozcan/omux/pull/42">#42</a>)</div></li>
+<li class="entry"><span class="chip chip-added">Added</span><div class="entry-text"><strong>⌘-click on <code>Foo.swift:12:4</code></strong> opens the file in the preview, the way plain paths do, instead of handing it to the default editor. (<a href="https://github.com/onurozcan/omux/pull/39">#39</a>)</div></li>
+<li class="entry"><span class="chip chip-changed">Changed</span><div class="entry-text"><strong>Closing the main window quits omux</strong>, with the usual confirmation, instead of leaving every session running with no window. The close, minimize and zoom buttons also stay visible on newer macOS, where hiding the toolbar hid them too. (<a href="https://github.com/onurozcan/omux/pull/43">#43</a>)</div></li>
+<li class="entry"><span class="chip chip-changed">Changed</span><div class="entry-text"><strong>Claude Code and Codex no longer start on their own in the home folder.</strong> An agent started in <code>~</code> treats all of it as its project and reads Downloads, Documents, Pictures and Music, so macOS asked for access to each in omux's name. A session without a project folder now opens a shell and shows a banner pointing to Edit Session; starting the agent by hand still works. (<a href="https://github.com/onurozcan/omux/pull/45">#45</a>)</div></li>
+<li class="entry"><span class="chip chip-changed">Changed</span><div class="entry-text"><strong>Allow picks Claude Code's "Yes"</strong> wherever the highlight is in the prompt. It used to press Return, which took the highlighted row, so a moved highlight could switch the session to "accept edits" or deny the tool. Allow and Deny now appear only for tool prompts, not for plan approval or peer messages, whose first option isn't a plain yes. (<a href="https://github.com/onurozcan/omux/pull/36">#36</a>)</div></li>
+<li class="entry"><span class="chip chip-changed">Changed</span><div class="entry-text">Review notes that couldn't be sent because the session isn't running are kept, with a banner, instead of dropped. (<a href="https://github.com/onurozcan/omux/pull/28">#28</a>)</div></li>
+<li class="entry"><span class="chip chip-changed">Changed</span><div class="entry-text">A ⌘-clicked folder or app bundle is shown in Finder instead of opened. (<a href="https://github.com/onurozcan/omux/pull/39">#39</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">A worktree branch name starting with <code>-</code>, such as <code>-D</code>, made git run <code>git branch -D &lt;base&gt;</code> and delete the base branch. Names git rejects are refused before anything runs, and a branch whose folder is already in use (<code>feat/x</code> and <code>feat-x</code> share one) no longer leaves a stray branch behind. (<a href="https://github.com/onurozcan/omux/pull/26">#26</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">The browser's element picker accepted messages from any page or frame at any time and typed them into the session. It now takes a pick only while you're picking, from the page itself, with control characters removed. (<a href="https://github.com/onurozcan/omux/pull/34">#34</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">A file name with a newline in it could end the typed line and run what followed: in review notes, where the name comes from git, and in files dropped or pasted into a session. Both are escaped now. (<a href="https://github.com/onurozcan/omux/pull/35">#35</a>, <a href="https://github.com/onurozcan/omux/pull/38">#38</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">Invisible Unicode (tag characters, bidi overrides, zero-width spaces, variation selectors) is removed from pasted check logs, so what you read before sending is what the agent gets. (<a href="https://github.com/onurozcan/omux/pull/40">#40</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">A double-click on Codex's Allow also accepted the next pending approval, which you hadn't seen. The buttons now answer only the request they showed. (<a href="https://github.com/onurozcan/omux/pull/37">#37</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">Recent Conversations titled a session started with a skill's slash command after the skill's instructions ("Base directory for this skill: …") instead of what you typed. (<a href="https://github.com/onurozcan/omux/pull/27">#27</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">A pull request result arriving for a session closed while gh ran left a Dock badge nothing could clear. (<a href="https://github.com/onurozcan/omux/pull/29">#29</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">Saving the Edit Session sheet put a Codex session's thread back to the one from when the sheet opened, so a restart resumed the wrong conversation. The ids are written only when "Start a fresh conversation" was pressed. (<a href="https://github.com/onurozcan/omux/pull/30">#30</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">Pressing Start right after New Session or Restart typed the startup command twice, and the second copy became the agent's first prompt. (<a href="https://github.com/onurozcan/omux/pull/31">#31</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">Subagent transcripts showed Claude Code's own reminders as agent text, and forks had no task line. (<a href="https://github.com/onurozcan/omux/pull/32">#32</a>)</div></li>
+<li class="entry"><span class="chip chip-fixed">Fixed</span><div class="entry-text">The byte order mark gh puts before a failed log's first line kept that line's timestamp and <code>##[group]</code> marker in the pasted log. (<a href="https://github.com/onurozcan/omux/pull/33">#33</a>)</div></li>
+</ul>
+  </div>
+</article>
 <article class="release" id="v0.7.0">
   <div class="release-rail"><span class="node"></span></div>
   <div class="release-meta">
     <h2><a href="#v0.7.0">0.7.0</a></h2>
-    <span class="badge badge-latest">Latest</span>
+    
     <p><time datetime="2026-10-30">October 30, 2026</time></p>
     <p><a href="https://github.com/onurozcan/omux/releases/tag/v0.7.0">Release on GitHub</a></p>
   </div>
