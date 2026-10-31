@@ -89,6 +89,8 @@ struct TabEditSheet: View {
     @State private var customCommand = ""
     @State private var sessionID = UUID()
     @State private var codexThreadID: String?
+    /// Only a fresh start is saved: Codex can assign or replace the thread while the sheet is open.
+    @State private var freshConversation = false
 
     private var provider: SessionProvider {
         switch mode {
@@ -127,6 +129,7 @@ struct TabEditSheet: View {
                         Button("Start a fresh conversation on next restart") {
                             if provider == .codex { codexThreadID = nil }
                             else { sessionID = UUID() }
+                            freshConversation = true
                         }
                         .controlSize(.small)
                     }
@@ -176,8 +179,9 @@ struct TabEditSheet: View {
             case .shell: tab.command = ""; tab.provider = .shell
             case .custom: tab.command = customCommand; tab.provider = SessionProvider.infer(command: customCommand)
             }
-            tab.claudeSessionID = sessionID
-            tab.codexThreadID = codexThreadID
+            if freshConversation {
+                if provider == .codex { tab.codexThreadID = nil } else { tab.claudeSessionID = sessionID }
+            }
         }
         dismiss()
     }
