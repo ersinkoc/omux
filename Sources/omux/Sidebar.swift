@@ -115,10 +115,25 @@ struct TabRow: View {
         let rt = store.runtime[tab.id] ?? TabRuntime()
         // Top-aligned so the dot stays beside the name when agent rows or buttons follow.
         HStack(alignment: .top, spacing: 8) {
-            Circle()
-                .fill(rt.statusColor ?? tab.color.color ?? Color.secondary.opacity(0.35))
-                .frame(width: 8, height: 8)
-                .padding(.top, 5)
+            // The status dot turns into a close button on hover, as in Safari's tabs.
+            ZStack {
+                if hovering {
+                    Button { store.requestClose(tab.id) } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 14, height: 14)
+                            .contentShape(Rectangle())
+                    }
+                    .help("Close session")
+                } else {
+                    Circle()
+                        .fill(rt.statusColor ?? tab.color.color ?? Color.secondary.opacity(0.35))
+                        .frame(width: 8, height: 8)
+                }
+            }
+            .frame(width: 8, height: 14)
+            .padding(.top, 2)
             VStack(alignment: .leading, spacing: 1) {
                 if store.renamingID == tab.id {
                     RenameField(initial: tab.name) { store.rename(tab.id, to: $0) }
