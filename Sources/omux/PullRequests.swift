@@ -273,8 +273,17 @@ enum CheckLog {
 
     /// Without control characters, tabs aside. Untrusted text is pasted into the terminal,
     /// where an ESC[201~ would end the paste early and the lines after it would submit.
+    /// Also without characters the terminal draws in no space (format characters such as tag
+    /// characters, bidi overrides and zero-width spaces, and variation selectors): the user
+    /// reads the paste before sending it, and must see everything the agent will get.
     static func plain(_ text: String) -> String {
-        String(String.UnicodeScalarView(text.unicodeScalars.filter { $0 == "\t" || $0.properties.generalCategory != .control }))
+        String(String.UnicodeScalarView(text.unicodeScalars.filter { scalar in
+            if scalar == "\t" { return true }
+            switch scalar.properties.generalCategory {
+            case .control, .format: return false
+            default: return !(0xFE00...0xFE0F).contains(scalar.value) && !(0xE0100...0xE01EF).contains(scalar.value)
+            }
+        }))
     }
 
     /// A code block the log can't close: its fence is longer than any backtick run inside.
