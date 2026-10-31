@@ -234,6 +234,15 @@ final class Store: ObservableObject {
             $0.statusState = nil; $0.statusKind = nil; $0.statusDetail = nil; $0.statusChildren = []
         }
 
+        // A tab without a project folder (or whose folder is gone) opens in the home folder;
+        // there the agent waits until the user starts it.
+        if command == nil, !provider.startsAutomatically(in: dir, home: home) {
+            Notices.shared.post("\(provider.label) didn't start in \(tab.name)",
+                                detail: "The session has no project folder, so it opened in your home folder. Set one with Edit Session… or Edit Project…, or start \(provider.label) yourself.",
+                                isError: true)
+            return
+        }
+
         if provider == .codex, command == nil {
             startCodex(view, tab: tab, cwd: dir)
         } else if let command = command ?? startupCommand(tab: tab, group: group), !command.isEmpty {

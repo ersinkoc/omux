@@ -110,6 +110,9 @@ struct TabEditSheet: View {
                 TextField("Folder", text: $directory, prompt: Text(group?.directory ?? "~"))
                 Button("Choose…") { if let dir = chooseDirectory(current: directory) { directory = dir } }
             }
+            if !provider.startsAutomatically(in: directory.isEmpty ? group?.directory ?? "~" : directory) {
+                HomeFolderHint(provider: provider)
+            }
             Picker("Command", selection: $mode) {
                 ForEach(CommandMode.allCases) { Text($0.rawValue).tag($0) }
             }
@@ -206,6 +209,9 @@ struct GroupEditSheet: View {
             HStack {
                 TextField("Folder", text: $directory, prompt: Text("~"))
                 Button("Choose…") { if let dir = chooseDirectory(current: directory) { directory = dir } }
+            }
+            if !provider.startsAutomatically(in: directory.isEmpty ? "~" : directory) {
+                HomeFolderHint(provider: provider)
             }
             Picker("New sessions", selection: $provider) {
                 ForEach(SessionProvider.allCases) { Text($0.label).tag($0) }
@@ -387,5 +393,16 @@ struct RecentSessionsSheet: View {
         case .codex(let recent): store.openCodexSession(recent)
         }
         dismiss()
+    }
+}
+
+/// Shown when an agent would open in the home folder, where omux doesn't start it.
+private struct HomeFolderHint: View {
+    let provider: SessionProvider
+
+    var body: some View {
+        Text("Choose a project folder. In your home folder \(provider.label) doesn't start on its own: it would read Downloads, Documents, Pictures and Music, and macOS would ask you about each.")
+            .font(.caption).foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
