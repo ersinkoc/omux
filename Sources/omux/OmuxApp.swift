@@ -154,9 +154,11 @@ private struct WindowChrome: NSViewRepresentable {
             observers = []
             guard let window else { return }
             DispatchQueue.main.async { Self.configure(window) }
-            // SwiftUI can hide the buttons again when it updates the window, on resize or around full screen.
-            let refresh: [Notification.Name] = [NSWindow.didBecomeKeyNotification, NSWindow.didResizeNotification,
-                                                NSWindow.didEnterFullScreenNotification, NSWindow.didExitFullScreenNotification]
+            // SwiftUI hides the buttons again whenever it updates the window, which happens at no
+            // fixed moment (switching sessions, opening panels, resizing). didUpdate comes after every
+            // event the window handles, and configure only writes what has changed, so it stays cheap.
+            let refresh: [Notification.Name] = [NSWindow.didUpdateNotification, NSWindow.didBecomeKeyNotification,
+                                                NSWindow.didResizeNotification, NSWindow.didExitFullScreenNotification]
             for name in refresh {
                 observers.append(NotificationCenter.default.addObserver(forName: name, object: window, queue: .main) { [weak window] _ in
                     MainActor.assumeIsolated { Self.configure(window) }
@@ -171,13 +173,19 @@ private struct WindowChrome: NSViewRepresentable {
 
         static func configure(_ window: NSWindow?) {
             guard let window else { return }
-            window.styleMask.formUnion([.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView])
-            window.titlebarAppearsTransparent = true
-            window.titleVisibility = .hidden
+            let style: NSWindow.StyleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+            if !window.styleMask.isSuperset(of: style) { window.styleMask.formUnion(style) }
+            if !window.titlebarAppearsTransparent { window.titlebarAppearsTransparent = true }
+            if window.titleVisibility != .hidden { window.titleVisibility = .hidden }
+            // In full screen macOS slides the title bar in and out itself; forcing it visible there
+            // would pin it over the sessions.
+            let fullScreen = window.styleMask.contains(.fullScreen)
             let frameView = window.contentView?.superview
             for type in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
                 guard let button = window.standardWindowButton(type) else { continue }
-                button.isHidden = false
+                if button.isHidden { button.isHidden = false }
+                if button.alphaValue < 1 { button.alphaValue = 1 }
+                guard !fullScreen else { continue }
                 // Hiding the window toolbar can hide the title bar view that holds the buttons, so
                 // showing the buttons alone isn't enough. Walk up to the window's frame view.
                 var parent = button.superview
