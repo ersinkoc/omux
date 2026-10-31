@@ -318,13 +318,16 @@ final class Store: ObservableObject {
     }
 
     /// Types text into a session's prompt as a paste; `submit` presses Return after it.
-    func sendText(_ text: String, to id: UUID, submit: Bool) {
-        guard let view = terminals[id], !(runtime[id]?.exited ?? true) else { return }
+    /// false when the session isn't running, so nothing was typed.
+    @discardableResult
+    func sendText(_ text: String, to id: UUID, submit: Bool) -> Bool {
+        guard let view = terminals[id], !(runtime[id]?.exited ?? true) else { return false }
         view.paste(text)
         if submit {
             // A beat later, so the program has taken the paste before Return arrives.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { view.send(txt: "\r") }
         }
+        return true
     }
 
     /// Whether the program in the session takes a paste as one block, without acting on its newlines.

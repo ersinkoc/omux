@@ -116,7 +116,11 @@ final class Changes: ObservableObject {
         let body = list.map { note in
             "- \(note.path)\(note.lineNumber.map { ":\($0)" } ?? ""): \(note.text)"
         }.joined(separator: "\n")
-        Store.shared.sendText("Review notes on your changes:\n" + body, to: tabID, submit: true)
+        // Kept when the session isn't running, so they can be sent once it is.
+        guard Store.shared.sendText("Review notes on your changes:\n" + body, to: tabID, submit: true) else {
+            Store.showError("Couldn't send the notes", "The session isn't running. Start it and send them again.")
+            return
+        }
         notes[tabID] = []
     }
 }
