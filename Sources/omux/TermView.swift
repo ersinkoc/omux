@@ -190,9 +190,13 @@ final class TermView: LocalProcessTerminalView {
     }
 
     /// Paths the way a shell, Claude Code and Codex read them: spaces and specials escaped.
+    /// Control characters become $'\xNN', so a newline in a name can't end the command.
     nonisolated static func shellEscaped(_ urls: [URL]) -> String {
         urls.map { url in
-            url.path.map { ch in " '\"()[]{}&;|<>$`\\*?#~!".contains(ch) ? "\\\(ch)" : String(ch) }.joined()
+            url.path.unicodeScalars.map { ch in
+                if ch.value < 0x20 || ch.value == 0x7f { return String(format: "$'\\x%02x'", ch.value) }
+                return " '\"()[]{}&;|<>$`\\*?#~!".unicodeScalars.contains(ch) ? "\\\(ch)" : String(ch)
+            }.joined()
         }.joined(separator: " ")
     }
 
