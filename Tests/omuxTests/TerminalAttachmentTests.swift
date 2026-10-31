@@ -38,6 +38,33 @@ final class TerminalAttachmentTests: XCTestCase {
         XCTAssertNil(try TermView.attachmentText(from: board))
     }
 
+    /// A newline or CR in a dropped file's name used to reach the shell as is, so Return ran
+    /// the rest of the name as a second command. Each path must read back as one word.
+    func testControlCharactersInNamesStayInOneWord() throws {
+        let paths = ["/tmp/shot\ntouch\tPWNED.png", "/tmp/shot\rtouch PWNED", "/tmp/a\u{1b}b\u{7f}", "/tmp/a b'c$(x)!.png"]
+        // Run in an empty folder, so a regression can't leave PWNED files anywhere else.
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        for shell in ["/bin/zsh", "/bin/bash"] {
+            for path in paths {
+                let escaped = TermView.shellEscaped([URL(fileURLWithPath: path)])
+                XCTAssertFalse(escaped.contains("\n") || escaped.contains("\r"), escaped)
+                let process = Process()
+                process.currentDirectoryURL = dir
+                process.executableURL = URL(fileURLWithPath: shell)
+                process.arguments = ["-c", "printf '%s|' " + escaped]
+                let out = Pipe()
+                process.standardOutput = out
+                try process.run()
+                let data = out.fileHandleForReading.readDataToEndOfFile()
+                process.waitUntilExit()
+                XCTAssertEqual(String(decoding: data, as: UTF8.self), path + "|", "\(shell): \(escaped)")
+            }
+        }
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: dir.path), [])
+    }
+
     /// A file name holding ESC[201~ would end the paste, and the lines after it would submit.
     func testPastedTextCannotEndThePaste() {
         let pasted = TermView.bracketedPaste("- a\u{1b}[201~\ntouch PWNED\n.txt: look")
