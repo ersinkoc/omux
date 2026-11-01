@@ -10,7 +10,7 @@ import {Abs, Caption, Kinetic, c01, hypeFont, monoFont, slam} from './Kinetic';
 const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
 
 // A status dot that flips through colours with a pop on every change.
-const FlipDot: React.FC<{frame: number; states: {at: number; color: string}[]; size: number}> = ({frame, states, size}) => {
+export const FlipDot: React.FC<{frame: number; states: {at: number; color: string}[]; size: number}> = ({frame, states, size}) => {
   let cur = states[0];
   for (const s of states) if (frame >= s.at) cur = s;
   const isFirst = cur === states[0];
@@ -28,7 +28,7 @@ const FlipDot: React.FC<{frame: number; states: {at: number; color: string}[]; s
   );
 };
 
-const Bell: React.FC<{size: number; color: string}> = ({size, color}) => (
+export const Bell: React.FC<{size: number; color: string}> = ({size, color}) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
     <path d="M12 2a6 6 0 0 0-6 6v4l-2 3v1h16v-1l-2-3V8a6 6 0 0 0-6-6zm0 20a3 3 0 0 0 3-3H9a3 3 0 0 0 3 3z" />
   </svg>
