@@ -35,6 +35,9 @@ APP="build/$NAME.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/omux "$APP/Contents/MacOS/omux"
+# The `omux` command line tool, on the PATH of every session the app starts.
+mkdir -p "$APP/Contents/Resources/bin"
+cp .build/release/omux-cli "$APP/Contents/Resources/bin/omux"
 cp Info.plist "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" -c "Set :CFBundleName $NAME" \
   -c "Set :NSServices:0:NSMenuItem:default Open in $NAME" -c "Set :NSServices:0:NSPortName $NAME" "$APP/Contents/Info.plist"
@@ -66,6 +69,7 @@ if [[ "$MODE" == "install" ]]; then
   # A stable signing identity keeps macOS from re-asking permissions after each rebuild.
   IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | head -1 | awk '{print $2}' || true)
   sign_sparkle "${IDENTITY:--}"
+  codesign --force --sign "${IDENTITY:--}" "$APP/Contents/Resources/bin/omux" 2>&1 | without "replacing existing signature"
   codesign --force --sign "${IDENTITY:--}" "$APP" 2>&1 | without "replacing existing signature"
   # Install to /Applications so Finder's "Open in omux" service and Dock stay registered.
   rm -rf "/Applications/$NAME.app"
@@ -97,6 +101,7 @@ fi
 
 # Hardened runtime and a secure timestamp are required for notarization.
 sign_sparkle "$IDENTITY" --options runtime --timestamp
+codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP/Contents/Resources/bin/omux"
 codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
 codesign --verify --strict --deep "$APP"
 

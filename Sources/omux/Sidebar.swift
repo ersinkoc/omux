@@ -60,6 +60,9 @@ struct Sidebar: View {
                             .tag(tab.id)
                             .padding(.leading, 10)
                             .contextMenu { TabMenu(tab: tab, groupID: groupID) }
+                            // Dragged onto a terminal's edge, the session is shown there in a pane.
+                            // (itemProvider keeps the List's own drag, so reordering and clicks still work.)
+                            .itemProvider { NSItemProvider(object: tab.id.uuidString as NSString) }
                     }
                 }
                 .onMove { from, to in store.moveRows(rows, from: from, to: to) }
@@ -138,7 +141,14 @@ struct TabRow: View {
                 if store.renamingID == tab.id {
                     RenameField(initial: tab.name) { store.rename(tab.id, to: $0) }
                 } else {
-                    Text(tab.name).lineLimit(1)
+                    HStack(spacing: 5) {
+                        Text(tab.name).lineLimit(1)
+                        if store.layout(near: tab.id)?.contains(tab.id) == true {
+                            // On the project's canvas.
+                            Image(systemName: "square.grid.2x2").imageScale(.small).foregroundStyle(.tertiary)
+                                .help("Shown in a pane")
+                        }
+                    }
                 }
                 if let worktree = tab.worktree {
                     HStack(spacing: 3) {
@@ -226,12 +236,12 @@ struct GroupHeader: View {
             }
             .opacity(hovering || group.isCollapsed ? 1 : 0)
             .help(group.isCollapsed ? "Show sessions" : "Hide sessions")
-            Button { store.newTab(in: group.id) } label: {
+            Button { store.newTab(in: group.id, command: "") } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 8, weight: .semibold))
                     .frame(width: 10, height: 10)
             }
-            .help("New session in \(group.name)")
+            .help("New shell in \(group.name)")
         }
         .buttonStyle(.plain)
         .foregroundStyle(.tertiary)
@@ -278,6 +288,14 @@ struct TabMenu: View {
     var body: some View {
         Button("Rename") { store.renamingID = tab.id }
         Button("Edit Session…") { store.editingTabID = tab.id }
+        if store.splitIDs.contains(tab.id) {
+            Button("Close Pane") { store.removeFromSplit(tab.id) }
+        } else if let selected = store.selectedTabID, selected != tab.id {
+            Menu("Show in Pane") {
+                Button("Right of \(store.tab(selected)?.name ?? "current")") { store.splitPane(selected, with: tab.id, axis: .horizontal) }
+                Button("Below \(store.tab(selected)?.name ?? "current")") { store.splitPane(selected, with: tab.id, axis: .vertical) }
+            }
+        }
         Menu("Color") {
             ForEach(TabColor.allCases) { color in
                 Button(color.label) { store.updateTab(tab.id) { $0.color = color } }

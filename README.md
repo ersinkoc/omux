@@ -33,6 +33,8 @@ omux turns that into a dashboard.
 | **Conversations that resume** | Each Claude Code session keeps its session ID and each Codex session its thread, so Restart and relaunch reopen the exact conversation. |
 | **Live status** | Working, needs you or done, per session. The Dock badge counts sessions waiting on you, and a notification brings you to the right one. |
 | **Allow or deny from the sidebar** | Claude Code tool permissions and Codex approvals answered without switching sessions. Deny lets you tell the agent what to do instead. |
+| **Panes** | Sessions of a project arranged in the window: split right or down, drag from the sidebar onto an edge, resize, move, maximize. One arrangement per project, saved. |
+| **The `omux` command** | Programs in a session can list the project's sessions, read their screens, and start sessions of their own to send text to. Scoped to the project, children only, every action shown as a banner. [docs/cli.md](docs/cli.md) |
 | **Subagents** | Every subagent of Claude Code or Codex listed with its current tool. Click one to read its transcript. |
 | **Worktree sessions** (⌥⌘T) | A session on its own branch and folder, so parallel agents never touch each other's files. A per-project setup command runs first, like `cp "$OMUX_REPO/.env" . && npm install`. |
 | **Pull request status** | With the [GitHub CLI](https://cli.github.com): checks, reviews and merges next to the session. Failing checks' logs sent to the agent in one click. Merged pull requests offer to clean up the worktree. |

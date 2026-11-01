@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 @main
 struct OmuxApp: App {
@@ -43,10 +44,12 @@ enum Prefs {
     /// A macOS alert sound name, or "Default".
     static let notifySound = "notifySound"
     static let welcomed = "welcomed"
+    /// Sessions get the `omux` command line tool. On by default.
+    static let cliEnabled = "cliEnabled"
 
     static let all = [confirmQuit, showFolderPath, usageInterval, theme, autoResume, showFiles, filesByDate,
                       filesBrowserCollapsed, previewWrapLines, panelTab, fontFamily, fontSize,
-                      notifyNeedsYou, notifyDone, notifyPrograms]
+                      notifyNeedsYou, notifyDone, notifyPrograms, cliEnabled]
 
     /// A beta build (./build.sh --beta) starts out with the release app's settings, such as
     /// the theme and font, instead of the defaults. Only on its first launch.
@@ -75,6 +78,7 @@ struct SettingsView: View {
     @AppStorage(Prefs.notifyNeedsYou) private var notifyNeedsYou = true
     @AppStorage(Prefs.notifyDone) private var notifyDone = false
     @AppStorage(Prefs.notifyPrograms) private var notifyPrograms = true
+    @AppStorage(Prefs.cliEnabled) private var cliEnabled = true
 
     var body: some View {
         Form {
@@ -107,6 +111,10 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
                 Toggle("Confirm before quitting while sessions are running", isOn: $confirmQuit)
                 Text("Quitting stops every session. Saved Claude Code and Codex conversations can be continued on the next launch.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Toggle("Give sessions the omux command", isOn: $cliEnabled)
+                Text("Programs in a session can run `omux` to list the project's sessions, read their screens, and start sessions of their own to send text to. Takes effect for sessions started after the change.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -206,6 +214,7 @@ struct ContentView: View {
     @AppStorage(Prefs.fontFamily) private var fontFamily = ""
     @AppStorage(Prefs.fontSize) private var fontSize = Fonts.defaultSize
     @AppStorage(Prefs.showFiles) private var showFiles = false
+    @AppStorage("panelWidth") private var panelWidth = 250.0
 
     private var theme: Theme { Theme(rawValue: themeName) ?? .dark }
 
@@ -228,13 +237,21 @@ struct ContentView: View {
             Sidebar(theme: theme)
                 .toolbar(removing: .sidebarToggle)
         } detail: {
-            HSplitView {
+            HStack(spacing: 0) {
                 VStack(spacing: 0) {
                     SessionHeader(theme: theme, showFiles: $showFiles)
+                        // Above the panes: their layout is measured with GeometryReader, which
+                        // otherwise paints over the header.
+                        .zIndex(1)
                     // Over the terminal, so a notice doesn't resize the session.
                     ZStack(alignment: .top) {
-                        if let id = store.selectedTabID, let term = store.terminal(for: id) {
-                            TerminalHost(termView: term, theme: theme)
+                        if let shown = store.shownLayout {
+                            PaneTree(node: shown, theme: theme)
+                                .background(Color(nsColor: theme.chrome))
+                        } else if let id = store.selectedTabID, let term = store.terminal(for: id) {
+                            DropIntoPane(target: id) { hooks in
+                                TerminalHost(termView: term, theme: theme, onDragEdge: hooks.edgeChanged, onDropSession: hooks.dropped)
+                            }
                         } else {
                             ContentUnavailableView("No session", systemImage: "terminal", description: Text("Press ⌘T to start one."))
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -246,8 +263,10 @@ struct ContentView: View {
                 .frame(minWidth: 360)
                 .ignoresSafeArea(.container, edges: .top)
                 if showFiles {
+                    // As narrow as the sidebar by default; the handle on its edge resizes it.
+                    PanelHandle(width: $panelWidth)
                     RightPanel(root: projectRoot, theme: theme)
-                        .frame(minWidth: 260, idealWidth: 380, maxWidth: 900)
+                        .frame(width: panelWidth)
                         .ignoresSafeArea(.container, edges: .top)
                 }
             }
@@ -284,7 +303,17 @@ struct SessionHeader: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            if let tab = store.selectedTab {
+            if let shown = store.shownLayout {
+                // Every pane has its own header; this one names the project they belong to.
+                Image(systemName: "folder").foregroundStyle(.tertiary)
+                Text(store.selectedGroup?.name ?? "Panes")
+                    .font(.system(size: 11, weight: .semibold))
+                    .lineLimit(1)
+                Text("\(shown.ids.count) panes")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            } else if let tab = store.selectedTab {
                 let rt = store.runtime[tab.id] ?? TabRuntime()
                 Circle()
                     .fill(rt.statusColor ?? tab.color.color ?? Color.secondary.opacity(0.4))
@@ -328,6 +357,16 @@ struct SessionHeader: View {
             } else {
                 Spacer()
             }
+            if store.isMaximized {
+                Button { store.restoreSplit() } label: { Image(systemName: "arrow.down.right.and.arrow.up.left") }
+                    .help("Back to side by side")
+            } else if let id = store.selectedTabID {
+                // The way into panes from a single session: a shell beside or below it.
+                Button { store.splitWithShell(id, axis: .horizontal) } label: { Image(systemName: "rectangle.split.2x1") }
+                    .help("New shell to the right, in this session's folder")
+                Button { store.splitWithShell(id, axis: .vertical) } label: { Image(systemName: "rectangle.split.1x2") }
+                    .help("New shell below, in this session's folder")
+            }
             Button { showFiles.toggle() } label: { Image(systemName: "sidebar.trailing") }
                 .foregroundStyle(showFiles ? .primary : .secondary)
                 .help("Files panel (⌥⌘F)")
@@ -339,6 +378,235 @@ struct SessionHeader: View {
         .frame(height: 28)
         .background(Color(nsColor: theme.chrome))
         .overlay(alignment: .bottom) { Rectangle().fill(.primary.opacity(0.08)).frame(height: 1) }
+    }
+}
+
+/// The layout tree as nested splits. There's no divider to see: the gutter between two
+/// cards is the handle, and dragging it resizes them.
+struct PaneTree: View {
+    @EnvironmentObject var store: Store
+    let node: PaneLayout
+    let theme: Theme
+    var path: [Bool] = []
+
+    var body: some View {
+        switch node {
+        case .session(let id):
+            SplitPane(tabID: id, theme: theme)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(.primary.opacity(0.1), lineWidth: 1))
+                .padding(4)
+        case .split(let axis, let fraction, let first, let second):
+            GeometryReader { geo in
+                let total = axis == .horizontal ? geo.size.width : geo.size.height
+                let firstSize = (total * fraction).rounded()
+                let handle = Rectangle().fill(Color.clear).contentShape(Rectangle())
+                    .frame(width: axis == .horizontal ? 10 : nil, height: axis == .vertical ? 10 : nil)
+                    .onHover { inside in
+                        if inside { (axis == .horizontal ? NSCursor.resizeLeftRight : NSCursor.resizeUpDown).push() } else { NSCursor.pop() }
+                    }
+                    .gesture(DragGesture(minimumDistance: 1, coordinateSpace: .named("pane-split"))
+                        .onChanged { value in
+                            let position = axis == .horizontal ? value.location.x : value.location.y
+                            store.resizePane(path: path, fraction: position / max(total, 1))
+                        })
+                ZStack(alignment: .topLeading) {
+                    if axis == .horizontal {
+                        HStack(spacing: 0) {
+                            PaneTree(node: first, theme: theme, path: path + [false]).frame(width: firstSize)
+                            PaneTree(node: second, theme: theme, path: path + [true])
+                        }
+                        handle.frame(maxHeight: .infinity).offset(x: firstSize - 5)
+                    } else {
+                        VStack(spacing: 0) {
+                            PaneTree(node: first, theme: theme, path: path + [false]).frame(height: firstSize)
+                            PaneTree(node: second, theme: theme, path: path + [true])
+                        }
+                        handle.frame(maxWidth: .infinity).offset(y: firstSize - 5)
+                    }
+                }
+                .coordinateSpace(name: "pane-split")
+            }
+        }
+    }
+}
+
+/// One session in the layout: a slim header with its controls, then its terminal. A click
+/// anywhere selects it; the header can be dragged onto another pane's edge to move it.
+struct SplitPane: View {
+    @EnvironmentObject var store: Store
+    let tabID: UUID
+    let theme: Theme
+    var body: some View {
+        let selected = store.selectedTabID == tabID
+        DropIntoPane(target: tabID) { hooks in
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                if let tab = store.tab(tabID) {
+                    let rt = store.runtime[tabID] ?? TabRuntime()
+                    Circle()
+                        .fill(rt.statusColor ?? tab.color.color ?? Color.secondary.opacity(0.4))
+                        .frame(width: 7, height: 7)
+                    Text(tab.name)
+                        .font(.system(size: 11, weight: selected ? .semibold : .regular))
+                        .lineLimit(1)
+                    if let line = rt.statusLine(showFolder: false) {
+                        Text(line).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                    if rt.awaitsPermission {
+                        PermissionButtons(tabID: tabID).controlSize(.mini)
+                    }
+                }
+                Spacer()
+                Button { store.splitWithShell(tabID, axis: .horizontal) } label: { Image(systemName: "rectangle.split.2x1") }
+                    .disabled(store.splitIDs.count >= PaneLayout.maxPanes)
+                    .help("New shell to the right, in this session's folder")
+                Button { store.splitWithShell(tabID, axis: .vertical) } label: { Image(systemName: "rectangle.split.1x2") }
+                    .disabled(store.splitIDs.count >= PaneLayout.maxPanes)
+                    .help("New shell below, in this session's folder")
+                Button { store.maximize(tabID) } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }
+                    .help("Show only this session; the layout stays")
+                Button { store.removeFromSplit(tabID) } label: { Image(systemName: "xmark") }
+                    .help("Close this pane (the session keeps running)")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .font(.system(size: 11))
+            .padding(.horizontal, 8)
+            .frame(height: 24)
+            .background(Color(nsColor: theme.chrome))
+            .contentShape(Rectangle())
+            .onTapGesture { focus() }
+            .onDrag { NSItemProvider(object: tabID.uuidString as NSString) }
+            .help("Drag onto another pane's edge to move this session there")
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(selected ? Color.accentColor.opacity(0.8) : .primary.opacity(0.08)).frame(height: 1)
+            }
+            if let term = store.terminal(for: tabID) {
+                TerminalHost(termView: term, theme: theme, onClick: {
+                    if store.selectedTabID != tabID { store.selectedTabID = tabID }
+                }, onDragEdge: hooks.edgeChanged, onDropSession: hooks.dropped)
+            } else {
+                Color(nsColor: theme.background)
+            }
+        }
+        }
+        .onChange(of: store.selectedTabID) { _, id in
+            if id == tabID, let term = store.terminal(for: tabID), term.window?.firstResponder !== term {
+                term.window?.makeFirstResponder(term)
+            }
+        }
+    }
+
+    private func focus() {
+        store.selectedTabID = tabID
+        if let term = store.terminal(for: tabID) { term.window?.makeFirstResponder(term) }
+    }
+}
+
+/// The edge of the right panel: a hairline you can drag to resize it.
+struct PanelHandle: View {
+    @Binding var width: Double
+    @State private var startWidth: Double?
+
+    var body: some View {
+        Rectangle()
+            .fill(.primary.opacity(0.08))
+            .frame(width: 1)
+            .overlay {
+                Color.clear.frame(width: 9).contentShape(Rectangle())
+                    .onHover { inside in if inside { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() } }
+                    .gesture(DragGesture(minimumDistance: 1)
+                        .onChanged { value in
+                            if startWidth == nil { startWidth = width }
+                            width = min(max((startWidth ?? width) - value.translation.width, 220), 900)
+                        }
+                        .onEnded { _ in startWidth = nil })
+            }
+    }
+}
+
+/// What a terminal container reports while a session is dragged over it.
+struct DropHooks {
+    let edgeChanged: (Edge?) -> Void
+    let dropped: (UUID, Edge) -> Void
+}
+
+/// Lets a session be dropped on the content's edges: from the sidebar, or from another pane.
+struct DropIntoPane<Content: View>: View {
+    @EnvironmentObject var store: Store
+    let target: UUID
+    @ViewBuilder let content: (DropHooks) -> Content
+    @State private var dropEdge: Edge?
+    @State private var size: CGSize = .zero
+
+    var body: some View {
+        content(DropHooks(edgeChanged: { dropEdge = $0 }, dropped: { id, edge in store.dropSession(id, on: target, edge: edge) }))
+            .background(GeometryReader { geo in
+                Color.clear
+                    .onAppear { size = geo.size; store.paneSizes[target] = geo.size }
+                    .onChange(of: geo.size) { _, new in size = new; store.paneSizes[target] = new }
+            })
+            .overlay { highlight }
+            .onDrop(of: [.plainText], delegate: PaneDropDelegate(target: target, edge: $dropEdge, size: size, store: store))
+    }
+
+    /// Where the dragged session would land: the half of this pane on that edge.
+    @ViewBuilder private var highlight: some View {
+        if let edge = dropEdge {
+            GeometryReader { geo in
+                let w = geo.size.width, h = geo.size.height
+                let rect: CGRect = switch edge {
+                case .leading: CGRect(x: 0, y: 0, width: w / 2, height: h)
+                case .trailing: CGRect(x: w / 2, y: 0, width: w / 2, height: h)
+                case .top: CGRect(x: 0, y: 0, width: w, height: h / 2)
+                case .bottom: CGRect(x: 0, y: h / 2, width: w, height: h / 2)
+                }
+                Rectangle()
+                    .fill(Color.accentColor.opacity(0.18))
+                    .overlay(Rectangle().stroke(Color.accentColor.opacity(0.8), lineWidth: 1))
+                    .frame(width: rect.width, height: rect.height)
+                    .offset(x: rect.minX, y: rect.minY)
+            }
+            .allowsHitTesting(false)
+        }
+    }
+}
+
+/// Takes a dragged session and puts it on the edge of this pane nearest to where it was dropped.
+struct PaneDropDelegate: DropDelegate {
+    let target: UUID
+    @Binding var edge: Edge?
+    let size: CGSize
+    let store: Store
+
+    func validateDrop(info: DropInfo) -> Bool { info.hasItemsConforming(to: [.plainText]) }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        edge = Self.edge(at: info.location, in: size)
+        return DropProposal(operation: .move)
+    }
+
+    func dropExited(info: DropInfo) { edge = nil }
+
+    func performDrop(info: DropInfo) -> Bool {
+        let landing = edge ?? Self.edge(at: info.location, in: size)
+        edge = nil
+        guard let item = info.itemProviders(for: [.plainText]).first else { return false }
+        item.loadObject(ofClass: NSString.self) { object, _ in
+            guard let text = object as? String, let id = UUID(uuidString: text) else { return }
+            DispatchQueue.main.async { store.dropSession(id, on: target, edge: landing) }
+        }
+        return true
+    }
+
+    /// The edge of the pane the point is nearest to, each distance taken as a share of that
+    /// side, so a wide pane doesn't favour its top and bottom.
+    static func edge(at point: CGPoint, in size: CGSize) -> Edge {
+        guard size.width > 0, size.height > 0 else { return .trailing }
+        let shares: [(Edge, CGFloat)] = [(.leading, point.x / size.width), (.trailing, 1 - point.x / size.width),
+                                         (.top, point.y / size.height), (.bottom, 1 - point.y / size.height)]
+        return shares.min(by: { $0.1 < $1.1 })?.0 ?? .trailing
     }
 }
 
@@ -376,6 +644,16 @@ struct AppCommands: Commands {
             Button("Files") { store.showPanel(.files) }.keyboardShortcut("1", modifiers: [.command, .option])
             Button("Changes") { store.showPanel(.changes) }.keyboardShortcut("2", modifiers: [.command, .option])
             Button("Browser") { store.showPanel(.browser) }.keyboardShortcut("3", modifiers: [.command, .option])
+            Divider()
+            Button(store.selectedTabID.map { store.splitIDs.contains($0) } == true ? "Remove from Side by Side" : "Show Side by Side") {
+                if let id = store.selectedTabID { store.toggleSplit(id) }
+            }
+            .keyboardShortcut("s", modifiers: [.command, .option])
+            Button("Tidy Panes") { store.tidyPanes() }
+                .disabled(store.splitIDs.isEmpty)
+            Button("Clear Panes") { store.clearSplit() }
+                .keyboardShortcut("s", modifiers: [.command, .option, .shift])
+                .disabled(store.splitIDs.isEmpty)
             Divider()
             Button("Bigger") { Fonts.adjustSize(by: 1) }.keyboardShortcut("+")
             Button("Smaller") { Fonts.adjustSize(by: -1) }.keyboardShortcut("-")

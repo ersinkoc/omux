@@ -82,6 +82,17 @@ final class TermView: LocalProcessTerminalView {
 
     required init?(coder: NSCoder) { fatalError("not supported") }
 
+    /// The last `count` lines on screen (and just above it), without trailing blank lines.
+    /// For the `omux screen` command.
+    func lastLines(_ count: Int) -> [String] {
+        guard let snapshot = terminalContentSnapshot(region: .history(maximumScrollbackRows: count)) else { return [] }
+        var lines = snapshot.rows.map { row in
+            String(row.text.reversed().drop { $0 == " " }.reversed())
+        }
+        while let last = lines.last, last.isEmpty { lines.removeLast() }
+        return Array(lines.suffix(count))
+    }
+
     func apply(_ theme: Theme) {
         font = Fonts.terminal()
         nativeBackgroundColor = theme.background
@@ -307,18 +318,89 @@ final class TermView: LocalProcessTerminalView {
 struct TerminalHost: NSViewRepresentable {
     let termView: TermView
     let theme: Theme
+    /// Called on a click anywhere in the terminal, before the terminal handles it.
+    var onClick: (() -> Void)? = nil
+    /// A session dragged over the terminal: the edge it would land on, or nil when it leaves.
+    var onDragEdge: ((Edge?) -> Void)? = nil
+    /// A session dropped on the terminal, with the edge it landed on.
+    var onDropSession: ((UUID, Edge) -> Void)? = nil
 
     final class Coordinator { var currentID: UUID? }
 
+    /// Notices clicks on the way to the terminal without taking them, and takes sessions
+    /// dragged from the sidebar or another pane (AppKit drags, which SwiftUI's own drop
+    /// targets don't receive from a List).
+    final class Container: NSView {
+        var onClick: (() -> Void)?
+        var onDragEdge: ((Edge?) -> Void)?
+        var onDropSession: ((UUID, Edge) -> Void)?
+
+        override init(frame: NSRect) {
+            super.init(frame: frame)
+            registerForDraggedTypes([.string])
+        }
+
+        required init?(coder: NSCoder) { fatalError("not supported") }
+
+        override func hitTest(_ point: NSPoint) -> NSView? {
+            let view = super.hitTest(point)
+            if view != nil, let event = NSApp.currentEvent, event.type == .leftMouseDown || event.type == .rightMouseDown,
+               let onClick {
+                DispatchQueue.main.async(execute: onClick)
+            }
+            return view
+        }
+
+        private func session(in info: NSDraggingInfo) -> UUID? {
+            info.draggingPasteboard.string(forType: .string).flatMap(UUID.init(uuidString:))
+        }
+
+        /// The edge nearest to the point, as a share of each side; flipped so top is top.
+        private func edge(for info: NSDraggingInfo) -> Edge {
+            let p = convert(info.draggingLocation, from: nil)
+            let size = bounds.size
+            guard size.width > 0, size.height > 0 else { return .trailing }
+            let y = isFlipped ? p.y : size.height - p.y
+            let shares: [(Edge, CGFloat)] = [(.leading, p.x / size.width), (.trailing, 1 - p.x / size.width),
+                                             (.top, y / size.height), (.bottom, 1 - y / size.height)]
+            return shares.min(by: { $0.1 < $1.1 })?.0 ?? .trailing
+        }
+
+        override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+            guard session(in: sender) != nil else { return [] }
+            onDragEdge?(edge(for: sender))
+            return .move
+        }
+
+        override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+            guard session(in: sender) != nil else { return [] }
+            onDragEdge?(edge(for: sender))
+            return .move
+        }
+
+        override func draggingExited(_ sender: NSDraggingInfo?) { onDragEdge?(nil) }
+
+        override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+            let landing = edge(for: sender)
+            onDragEdge?(nil)
+            guard let id = session(in: sender) else { return false }
+            onDropSession?(id, landing)
+            return true
+        }
+    }
+
     func makeCoordinator() -> Coordinator { Coordinator() }
 
-    func makeNSView(context: Context) -> NSView {
-        let container = NSView()
+    func makeNSView(context: Context) -> Container {
+        let container = Container()
         container.wantsLayer = true
         return container
     }
 
-    func updateNSView(_ container: NSView, context: Context) {
+    func updateNSView(_ container: Container, context: Context) {
+        container.onClick = onClick
+        container.onDragEdge = onDragEdge
+        container.onDropSession = onDropSession
         container.layer?.backgroundColor = theme.background.cgColor
         guard context.coordinator.currentID != termView.tabID || termView.superview !== container else { return }
         context.coordinator.currentID = termView.tabID

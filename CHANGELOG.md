@@ -2,6 +2,20 @@
 
 All notable changes to omux are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+
+- **Panes.** Sessions of a project can be arranged in the main area: split a pane right or down with the buttons on its header (a shell in the same folder), drag a session from the sidebar onto a terminal's edge, or right-click it › Show in Pane. Dividers drag; a pane's header drags onto another pane's edge to move it; maximize shows one pane with the layout remembered; closing a pane only closes that pane. Each project has one arrangement, saved with the workspace and restored on launch. View › Tidy Panes evens them out, Clear Panes (⌥⇧⌘S) empties them, ⌥⌘S adds the selected session beside the current one. A new pane always gets usable space: a pane too small to halve sends the new one to the top level as its own column or row. Up to six.
+- **The `omux` command in sessions.** Programs in a session can run `omux list`, `status`, `screen`, `new`, `send`, `close` and `wait` to see the project's other sessions, read their screens, and start and steer sessions of their own. A session can send text only to sessions it started, and only inside its own project; every such action shows a banner. The tool talks to the app over an owner-only Unix socket with a per-launch token, and session processes never inherit its descriptors. Settings › Sessions turns it off. See [docs/cli.md](docs/cli.md).
+- A session's folder is asked for before an agent starts in a project that has none, and New Project starts with the folder picker. A project with no folder shows one quiet notice instead of an error per session.
+
+### Changed
+
+- The + next to a project opens a shell in the project's folder.
+- The right panel opens as narrow as the sidebar and remembers the width you drag it to.
+- In pane mode the top bar names the project; each pane carries its own session header.
+
 ## [0.8.0] - 2026-10-31
 
 ### Added

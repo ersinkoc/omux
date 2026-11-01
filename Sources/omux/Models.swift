@@ -139,6 +139,34 @@ struct TabGroup: Identifiable, Codable, Hashable {
 struct Workspace: Codable {
     var groups: [TabGroup] = []
     var selectedTabID: UUID?
+    /// Each project's panes, by project id, when it showed more than one session.
+    var layouts: [String: PaneLayout] = [:]
+
+    init(groups: [TabGroup] = [], selectedTabID: UUID? = nil, layouts: [String: PaneLayout] = [:]) {
+        self.groups = groups; self.selectedTabID = selectedTabID; self.layouts = layouts
+    }
+
+    private enum CodingKeys: String, CodingKey { case groups, selectedTabID, layouts, layout }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        groups = try c.decodeIfPresent([TabGroup].self, forKey: .groups) ?? []
+        selectedTabID = try? c.decodeIfPresent(UUID.self, forKey: .selectedTabID)
+        // Layouts a newer version wrote that can't be read are dropped, not the whole workspace.
+        layouts = (try? c.decodeIfPresent([String: PaneLayout].self, forKey: .layouts)) ?? [:]
+        // Before layouts were per project there was one; it belongs to its first session's project.
+        if layouts.isEmpty, let single = try? c.decodeIfPresent(PaneLayout.self, forKey: .layout), let first = single.ids.first,
+           let group = groups.first(where: { $0.tabs.contains { $0.id == first } }) {
+            layouts[group.id.uuidString] = single
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(groups, forKey: .groups)
+        try c.encodeIfPresent(selectedTabID, forKey: .selectedTabID)
+        try c.encode(layouts, forKey: .layouts)
+    }
 }
 
 /// Live, non-persisted state of one terminal tab.

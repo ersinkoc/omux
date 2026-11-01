@@ -9,11 +9,16 @@ let package = Package(
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.6.0"),
     ],
     targets: [
+        // What the app and the `omux` command line tool say to each other.
+        .target(name: "OmuxCLIProtocol", path: "Sources/OmuxCLIProtocol"),
+        // The `omux` tool; build.sh puts it in the app bundle at Contents/Resources/bin/omux.
+        .executableTarget(name: "omux-cli", dependencies: ["OmuxCLIProtocol"], path: "Sources/omux-cli"),
         .executableTarget(
             name: "omux",
             dependencies: [
                 .product(name: "SwiftTerm", package: "SwiftTerm"),
                 .product(name: "Sparkle", package: "Sparkle"),
+                "OmuxCLIProtocol",
             ],
             path: "Sources/omux",
             // build.sh embeds Sparkle.framework in the app bundle; the binary finds it there.

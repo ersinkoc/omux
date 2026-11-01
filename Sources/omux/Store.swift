@@ -15,6 +15,7 @@ final class Store: ObservableObject {
         didSet {
             // Deferred: this fires inside the List's selection update.
             guard let id = selectedTabID else { return }
+            if let maximized = maximizedID, maximized != id { maximizedID = nil }
             DispatchQueue.main.async { [weak self] in
                 self?.clearAttention(id)
                 self?.refreshBusy(id)
@@ -51,6 +52,21 @@ final class Store: ObservableObject {
     private var browsers: [UUID: BrowserSession] = [:]
 
     private var terminals: [UUID: TermView] = [:]
+    /// Each project's arrangement of panes, by project id; a project has at most one.
+    /// Shown while the selected session is one of its panes.
+    @Published var layouts: [UUID: PaneLayout] = [:]
+    /// One pane of the layout shown on its own for a while; the layout stays as it was.
+    @Published var maximizedID: UUID?
+    /// What each pane measures on screen, reported by the view, so a new pane isn't put where it can't fit.
+    var paneSizes: [UUID: CGSize] = [:]
+    /// Below this, a pane isn't split further; the new pane joins the layout at the top level instead.
+    static let comfortablePane = CGSize(width: 360, height: 220)
+    /// The sessions in the layout, in reading order.
+    var splitIDs: [UUID] { selectedGroup.flatMap { layouts[$0.id] }?.ids ?? [] }
+    /// Sessions each session started with `omux new`; only those may it steer or close.
+    var cliChildren: [UUID: Set<UUID>] = [:]
+    /// Projects already told, this launch, that their agent waits for a folder.
+    private var folderNoticed: Set<UUID> = []
     private var codexStarts: [UUID: Task<Void, Never>] = [:]
     /// Sessions whose startup command is about to be typed; Start would type it a second time.
     private var pendingCommands: [UUID: UUID] = [:]
@@ -80,6 +96,16 @@ final class Store: ObservableObject {
             .debounce(for: .milliseconds(400), scheduler: RunLoop.main)
             .sink { [weak self] _ in self?.save() }
             .store(in: &cancellables)
+        $layouts.dropFirst()
+            .debounce(for: .milliseconds(400), scheduler: RunLoop.main)
+            .sink { [weak self] _ in self?.save() }
+            .store(in: &cancellables)
+        // The saved arrangements, minus sessions that no longer exist.
+        for (key, saved) in saved?.layouts ?? [:] {
+            guard let gid = UUID(uuidString: key), groups.contains(where: { $0.id == gid }),
+                  let live = saved.keeping({ allIDs.contains($0) }), live.ids.count > 1 else { continue }
+            layouts[gid] = live
+        }
 
         NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
             DispatchQueue.main.async {
@@ -163,6 +189,172 @@ final class Store: ObservableObject {
                             command: UserDefaults.standard.bool(forKey: Prefs.autoResume) ? nil : "")
     }
 
+    /// The live view for a running tab; nil for a dormant or exited one. Starts nothing.
+    func terminal(ifRunning tabID: UUID) -> TermView? {
+        guard let view = terminals[tabID], !(runtime[tabID]?.exited ?? true) else { return nil }
+        return view
+    }
+
+    // MARK: Split view
+
+    /// What the main area shows: the split while the selected session is in it, else the selected one.
+    var shownIDs: [UUID] {
+        guard let shown = shownLayout else { return selectedTabID.map { [$0] } ?? [] }
+        return shown.ids
+    }
+
+    /// The panes of the project `id` belongs to, without sessions that no longer exist.
+    func layout(near id: UUID) -> PaneLayout? {
+        guard let gid = group(containing: id)?.id else { return nil }
+        return layouts[gid]?.keeping({ tab($0) != nil })
+    }
+
+    private func setLayout(_ new: PaneLayout?, near id: UUID) {
+        guard let gid = group(containing: id)?.id else { return }
+        if let new, new.ids.count > 1 { layouts[gid] = new } else { layouts[gid] = nil; maximizedID = nil }
+    }
+
+    /// The arrangement on screen, or nil for the selected session alone.
+    var shownLayout: PaneLayout? {
+        guard let selected = selectedTabID, let live = layout(near: selected),
+              live.ids.count > 1, live.contains(selected), maximizedID != selected else { return nil }
+        return live
+    }
+
+    /// Whether the single pane on screen is a maximized member of its project's panes.
+    var isMaximized: Bool {
+        guard let selected = selectedTabID, maximizedID == selected, let live = layout(near: selected) else { return false }
+        return live.ids.count > 1 && live.contains(selected)
+    }
+
+    /// Splits `id`'s pane and puts `other` beside (horizontal) or below it (vertical), or
+    /// before it (left, above) with `before`. Both must be sessions of the same project; the
+    /// project's existing panes are kept, and `id` joins them first if it wasn't among them.
+    func splitPane(_ id: UUID, with other: UUID, axis: Axis, before: Bool = false) {
+        guard id != other, let gid = group(containing: id)?.id, group(containing: other)?.id == gid else { return }
+        var current = layout(near: id) ?? .session(id)
+        if current.contains(other) { current = current.removing(other) ?? .session(id) }
+        if !current.contains(id) {
+            // A session shown on its own joins the project's panes as a new column.
+            let share = min(max(1 / Double(current.ids.count + 1), 0.25), 0.5)
+            current = .split(axis: .horizontal, fraction: 1 - share, first: current, second: .session(id))
+        }
+        guard current.ids.count < PaneLayout.maxPanes else {
+            Self.showError("Up to \(PaneLayout.maxPanes) sessions in the window", "Close a pane first.")
+            return
+        }
+        // Halving a pane that is already small gives two unusable ones: then the new pane
+        // becomes a column or row of the whole layout, with a fair share of it.
+        let size = paneSizes[id] ?? CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        let room = axis == .horizontal ? size.width : size.height
+        let needed = 2 * (axis == .horizontal ? Self.comfortablePane.width : Self.comfortablePane.height)
+        let new: PaneLayout
+        if room < needed, current.ids.count > 1 {
+            let share = min(max(1 / Double(current.ids.count + 1), 0.25), 0.5)
+            new = before ? .split(axis: axis, fraction: share, first: .session(other), second: current)
+                         : .split(axis: axis, fraction: 1 - share, first: current, second: .session(other))
+        } else {
+            new = current.splitting(id, with: other, axis: axis, before: before)
+        }
+        setLayout(new, near: id)
+        maximizedID = nil
+        selectedTabID = other
+    }
+
+    /// A session dropped on `edge` of `target`'s pane: moved there if it's among the panes,
+    /// otherwise added there from the sidebar. Only within one project.
+    func dropSession(_ id: UUID, on target: UUID, edge: Edge) {
+        NSLog("[omux-drop] %@ on %@ edge=%@ canvas=%@", id.uuidString, target.uuidString, String(describing: edge),
+              layout(near: id).map { $0.ids.map(\.uuidString).joined(separator: ",") } ?? "none")
+        guard let gid = group(containing: id)?.id, group(containing: target)?.id == gid else {
+            Self.showError("Panes hold one project", "Sessions of different projects can't share the window.")
+            return
+        }
+        if id == target {
+            // Picking a session up in the sidebar selects it, so the main area shows it alone and
+            // the drop lands on itself: that means "put me on the project's canvas", on that side.
+            guard let canvas = layout(near: id), !canvas.contains(id) else { return }
+            let axis: Axis = (edge == .leading || edge == .trailing) ? .horizontal : .vertical
+            let share = min(max(1 / Double(canvas.ids.count + 1), 0.25), 0.5)
+            guard canvas.ids.count < PaneLayout.maxPanes else {
+                Self.showError("Up to \(PaneLayout.maxPanes) sessions in the window", "Close a pane first.")
+                return
+            }
+            let before = edge == .leading || edge == .top
+            setLayout(before ? .split(axis: axis, fraction: share, first: .session(id), second: canvas)
+                             : .split(axis: axis, fraction: 1 - share, first: canvas, second: .session(id)), near: id)
+            maximizedID = nil
+            selectedTabID = id
+            return
+        }
+        if layout(near: id)?.contains(id) == true { movePane(id, to: target, edge: edge); return }
+        let axis: Axis = (edge == .leading || edge == .trailing) ? .horizontal : .vertical
+        splitPane(target, with: id, axis: axis, before: edge == .leading || edge == .top)
+    }
+
+    func resizePane(path: [Bool], fraction: Double) {
+        guard let selected = selectedTabID, let current = layout(near: selected) else { return }
+        setLayout(current.resizing(path, to: fraction), near: selected)
+    }
+
+    /// A new shell in the same folder as `id`'s session, placed beside or below it.
+    func splitWithShell(_ id: UUID, axis: Axis) {
+        guard let tab = tab(id), let group = group(containing: id) else { return }
+        var shell = TabItem(name: "Shell", directory: directory(of: tab), command: "")
+        shell.provider = .shell
+        addSession(shell, to: group.id, select: false)
+        splitPane(id, with: shell.id, axis: axis)
+    }
+
+    /// Moves `id` to `edge` of `target`'s pane.
+    func movePane(_ id: UUID, to target: UUID, edge: Edge) {
+        guard let current = layout(near: id), current.contains(id), current.contains(target) else { return }
+        setLayout(current.moving(id, to: target, edge: edge), near: id)
+        maximizedID = nil
+        selectedTabID = id
+    }
+
+    func maximize(_ id: UUID) {
+        selectedTabID = id
+        maximizedID = id
+    }
+
+    func restoreSplit() { maximizedID = nil }
+
+    /// The project's sessions that aren't among its panes yet, for "add beside".
+    func splitCandidates(near id: UUID) -> [TabItem] {
+        let shown = layout(near: id)?.ids ?? []
+        return (group(containing: id)?.tabs ?? []).filter { !shown.contains($0.id) }
+    }
+
+    func toggleSplit(_ id: UUID) {
+        if layout(near: id)?.contains(id) == true { removeFromSplit(id) } else { addToSplit(id) }
+    }
+
+    /// Shows `id` beside the selected session (to its right), within the same project.
+    func addToSplit(_ id: UUID) {
+        guard let selected = selectedTabID, selected != id else { return }
+        splitPane(selected, with: id, axis: .horizontal)
+    }
+
+    func removeFromSplit(_ id: UUID) {
+        guard let current = layout(near: id) else { return }
+        setLayout(current.removing(id), near: id)
+        if maximizedID == id { maximizedID = nil }
+    }
+
+    /// Evens out the selected project's panes.
+    func tidyPanes() {
+        guard let gid = selectedGroup?.id, let current = layouts[gid] else { return }
+        layouts[gid] = current.balanced
+    }
+
+    /// Clears the selected project's panes.
+    func clearSplit() {
+        if let gid = selectedGroup?.id { layouts[gid] = nil }
+        maximizedID = nil
+    }
+
     private func startAllSessions() {
         let all = allTabs
         let ordered = all.filter { $0.tab.id == selectedTabID } + all.filter { $0.tab.id != selectedTabID }
@@ -206,13 +398,13 @@ final class Store: ObservableObject {
             "LOGNAME": inherited["LOGNAME"] ?? NSUserName(),
             "SHELL": shell,
             "TMPDIR": inherited["TMPDIR"] ?? NSTemporaryDirectory(),
-            "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
             "LANG": inherited["LANG"] ?? "en_US.UTF-8",
             "TERM": "xterm-256color",
             "COLORTERM": "truecolor",
             "TERM_PROGRAM": "omux",
         ]
         if let enc = inherited["__CF_USER_TEXT_ENCODING"] { env["__CF_USER_TEXT_ENCODING"] = enc }
+        env.merge(cliEnvironment(for: tab.id, path: "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin")) { $1 }
         if let codexHome = inherited["CODEX_HOME"] { env["CODEX_HOME"] = codexHome }
         let provider = tab.resolvedProvider(in: group)
         if provider == .codex {
@@ -237,9 +429,13 @@ final class Store: ObservableObject {
         // A tab without a project folder (or whose folder is gone) opens in the home folder;
         // there the agent waits until the user starts it.
         if command == nil, !provider.startsAutomatically(in: dir, home: home) {
-            Notices.shared.post("\(provider.label) didn't start in \(tab.name)",
-                                detail: "The session has no project folder, so it opened in your home folder. Set one with Edit Session… or Edit Project…, or start \(provider.label) yourself.",
-                                isError: true)
+            // Once per project, and quietly: the shell is open, only the agent waits.
+            if !folderNoticed.contains(group.id) {
+                folderNoticed.insert(group.id)
+                Notices.shared.post("Pick a folder for \(group.name)",
+                                    detail: "\(provider.label) starts only in a project folder. Right-click the project › Edit Project… to set one, or press ▶ to start it in your home folder anyway.",
+                                    isError: false)
+            }
             return
         }
 
@@ -635,26 +831,31 @@ final class Store: ObservableObject {
 
     // MARK: Tabs
 
-    func newTab(in groupID: UUID? = nil, command: String? = nil) {
+    /// The new session's id, or nil when nothing was created right away (worktree sheet, cancelled folder).
+    @discardableResult
+    func newTab(in groupID: UUID? = nil, command: String? = nil) -> UUID? {
         guard let gi = groups.firstIndex(where: { $0.id == (groupID ?? selectedGroup?.id) }) ?? groups.indices.first else {
             newGroup()
-            return
+            return nil
         }
         if command != "", groups[gi].useWorktrees {
             newWorktreeProvider = command.map { SessionProvider.infer(command: $0) }
             newWorktreeGroupID = groups[gi].id
-            return
+            return nil
         }
         let tab = TabItem(name: "Session \(groups[gi].tabs.count + 1)", command: command)
+        // An agent needs a project folder; ask for it now rather than opening the shell and waiting.
+        if [.claude, .codex].contains(tab.resolvedProvider(in: groups[gi])), !askFolderIfMissing(groupIndex: gi) { return nil }
         groups[gi].tabs.append(tab)
         groups[gi].isCollapsed = false
         makeTerminal(tab: tab, group: groups[gi])
         selectedTabID = tab.id
+        return tab.id
     }
 
     /// Adds a ready-made session to a project and starts it. `setup` runs once before the
     /// session's command, which only starts if it succeeds.
-    func addSession(_ tab: TabItem, to groupID: UUID, setup: String? = nil) {
+    func addSession(_ tab: TabItem, to groupID: UUID, setup: String? = nil, select: Bool = true) {
         guard let gi = groups.firstIndex(where: { $0.id == groupID }) else { return }
         groups[gi].tabs.append(tab)
         groups[gi].isCollapsed = false
@@ -668,7 +869,7 @@ final class Store: ObservableObject {
             }
         }
         makeTerminal(tab: tab, group: groups[gi], command: command)
-        selectedTabID = tab.id
+        if select { selectedTabID = tab.id }
     }
 
     /// `command` after `setup`, only if it succeeds. A trailing ";" or "&" can't stand in
@@ -690,6 +891,12 @@ final class Store: ObservableObject {
             view.removeFromSuperview()
         }
         runtime[id] = nil
+        // Only the closed pane goes; its neighbours fill the space and one of them takes the selection.
+        let wasOnCanvas = layout(near: id)?.contains(id) == true
+        removeFromSplit(id)
+        let nextPane = wasOnCanvas ? layout(near: id)?.ids.first : nil
+        cliChildren[id] = nil
+        for key in cliChildren.keys { cliChildren[key]?.remove(id) }
         Notifier.shared.clear(tabID: id)
         browsers.removeValue(forKey: id)?.close()
         if openAgent?.tabID == id { openAgent = nil }
@@ -697,7 +904,7 @@ final class Store: ObservableObject {
         groups[loc.group].tabs.remove(at: loc.tab)
         if selectedTabID == id {
             let siblings = groups[loc.group].tabs
-            selectedTabID = siblings.isEmpty ? allTabs.first?.tab.id : siblings[min(loc.tab, siblings.count - 1)].id
+            selectedTabID = nextPane ?? (siblings.isEmpty ? allTabs.first?.tab.id : siblings[min(loc.tab, siblings.count - 1)].id)
         }
     }
 
@@ -747,11 +954,33 @@ final class Store: ObservableObject {
     // MARK: Groups
 
     func newGroup() {
-        let group = TabGroup(name: "Project \(groups.count + 1)", tabs: [TabItem(name: "Session 1")])
+        // A project is a folder first; cancelling still makes one, named by hand, with no agent yet.
+        let folder = Self.chooseFolder(prompt: "Choose the project's folder")
+        let name = folder.map { ($0 as NSString).lastPathComponent } ?? "Project \(groups.count + 1)"
+        let group = TabGroup(name: name, directory: folder, tabs: [TabItem(name: "Session 1")])
         groups.append(group)
         makeTerminal(tab: group.tabs[0], group: group)
         selectedTabID = group.tabs[0].id
-        renamingID = group.id
+        if folder == nil { renamingID = group.id }
+    }
+
+    /// Asks for the project's folder when it has none; false when the user cancelled.
+    private func askFolderIfMissing(groupIndex gi: Int) -> Bool {
+        guard (groups[gi].directory ?? "").isEmpty else { return true }
+        guard let folder = Self.chooseFolder(prompt: "Choose the folder for \(groups[gi].name)") else { return false }
+        groups[gi].directory = folder
+        if groups[gi].name == "Default" || groups[gi].name.hasPrefix("Project ") { groups[gi].name = (folder as NSString).lastPathComponent }
+        return true
+    }
+
+    static func chooseFolder(prompt: String) -> String? {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.message = prompt
+        panel.prompt = "Choose"
+        return panel.runModal() == .OK ? panel.url?.path : nil
     }
 
     func deleteGroup(_ id: UUID) {
@@ -843,7 +1072,8 @@ final class Store: ObservableObject {
     // MARK: Persistence
 
     private func save() {
-        Persistence.save(Workspace(groups: groups, selectedTabID: selectedTabID))
+        Persistence.save(Workspace(groups: groups, selectedTabID: selectedTabID,
+                                   layouts: Dictionary(uniqueKeysWithValues: layouts.map { ($0.key.uuidString, $0.value) })))
     }
 
     func applyAppearance() {
@@ -853,6 +1083,7 @@ final class Store: ObservableObject {
 
     /// Saves the layout and kills every session's process tree, running or not.
     func prepareForTermination() {
+        CommandServer.shared.stop()
         save()
         codexStarts.values.forEach { $0.cancel() }
         CodexManager.shared.shutdown()
