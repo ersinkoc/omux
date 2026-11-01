@@ -42,6 +42,11 @@ final class CommandServer: @unchecked Sendable {
         guard fd >= 0 else { return }
         // Sessions are forked from this process; they must not inherit the socket.
         _ = fcntl(fd, F_SETFD, FD_CLOEXEC)
+        // A tool may give up (its timeout, Ctrl-C) before its reply is written. Writing to it then
+        // must fail, not raise SIGPIPE, which would end the app and every session in it. Set here,
+        // the option is inherited by each connection, even one whose tool left before the accept.
+        var on: Int32 = 1
+        _ = setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
         var addr = sockaddr_un()
         addr.sun_family = sa_family_t(AF_UNIX)
         let bytes = Array(path.utf8)

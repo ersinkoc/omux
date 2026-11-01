@@ -2,6 +2,8 @@ import XCTest
 import OmuxCLIProtocol
 @testable import omux
 
+private var brokenPipes = 0
+
 final class CLITests: XCTestCase {
     private func parse(_ line: String) -> Result<(command: CLICommand, json: Bool), CLIUsageError> {
         CLIArguments.parse(line.split(separator: " ").map(String.init))
@@ -139,5 +141,65 @@ final class CLITests: XCTestCase {
         XCTAssertTrue(bad.err.contains("bad token"), bad.err)
         let json = try run(["--json", "list"], token: server.token)
         XCTAssertTrue(json.out.contains("\"ok\" : true"), json.out)
+    }
+
+    /// A tool that gives up before its reply (its timeout, Ctrl-C) must not take the app down:
+    /// writing to it would raise SIGPIPE, whose default action ends the app and every session.
+    @MainActor
+    func testToolLeavingBeforeItsReplyRaisesNoSIGPIPE() throws {
+        let previous = signal(SIGPIPE) { _ in brokenPipes += 1 }
+        defer { signal(SIGPIPE, previous) }
+        brokenPipes = 0
+        let server = CommandServer()
+        server.handler = { _ in CLIResponse(ok: true) }
+        server.start()
+        defer { server.stop() }
+        let path = try XCTUnwrap(server.socketPath)
+        func connect() -> Int32 {
+            let fd = socket(AF_UNIX, SOCK_STREAM, 0)
+            var addr = sockaddr_un()
+            addr.sun_family = sa_family_t(AF_UNIX)
+            withUnsafeMutableBytes(of: &addr.sun_path) { raw in
+                let bytes = Array(path.utf8)
+                raw.copyBytes(from: bytes)
+                raw[bytes.count] = 0
+            }
+            _ = withUnsafePointer(to: &addr) {
+                $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.connect(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
+            }
+            return fd
+        }
+        func request(_ token: String) -> Data {
+            var data = try! JSONEncoder().encode(CLIRequest(token: token, from: "tab", command: "status"))
+            data.append(UInt8(ascii: "\n"))
+            return data
+        }
+        // The replies are made on the main thread, which doesn't run until every tool has gone;
+        // the first is accepted at once, the others only after their tools left.
+        for token in [server.token, server.token, "wrong"] {
+            let fd = connect()
+            let data = request(token)
+            _ = data.withUnsafeBytes { write(fd, $0.baseAddress!, data.count) }
+            close(fd)
+        }
+        // One tool that waits for its answer; the server is serial, so the earlier replies are written by then.
+        let answered = expectation(description: "answer")
+        var reply = Data()
+        DispatchQueue.global().async {
+            let fd = connect()
+            let data = request(server.token)
+            _ = data.withUnsafeBytes { write(fd, $0.baseAddress!, data.count) }
+            var buffer = [UInt8](repeating: 0, count: 4096)
+            while !reply.contains(UInt8(ascii: "\n")) {
+                let n = read(fd, &buffer, buffer.count)
+                if n <= 0 { break }
+                reply.append(buffer, count: n)
+            }
+            close(fd)
+            answered.fulfill()
+        }
+        wait(for: [answered], timeout: 10)
+        XCTAssertTrue(String(decoding: reply, as: UTF8.self).contains("\"ok\":true"))
+        XCTAssertEqual(brokenPipes, 0)
     }
 }
