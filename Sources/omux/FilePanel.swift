@@ -311,7 +311,9 @@ struct FilePreview: View {
         } else if ext == "pdf" {
             PDFKitView(url: url)
         } else if Self.text.contains(ext) || url.lastPathComponent.hasPrefix("."),
-                  let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize, size < 1_000_000,
+                  // Sized through symlinks, since String(contentsOf:) follows them; devices and pipes never end.
+                  let file = try? url.resolvingSymlinksInPath().resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey]),
+                  file.isRegularFile == true, let size = file.fileSize, size < 1_000_000,
                   let text = try? String(contentsOf: url, encoding: .utf8) {
             // Vertical-only scrolling offers the text the panel's width, so it wraps.
             ScrollView(wrapLines ? .vertical : [.vertical, .horizontal]) {
