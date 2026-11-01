@@ -188,19 +188,27 @@ struct TabRow: View {
                 }
             }
             Spacer(minLength: 4)
-            if hovering {
-                if rt.busy {
-                    Button { store.stop(tab.id) } label: { Image(systemName: "stop.fill") }
+            // Centred on the name line, like the status dot, whatever follows below the name.
+            ZStack {
+                if hovering {
+                    if rt.busy {
+                        Button { store.stop(tab.id) } label: {
+                            Image(systemName: "stop.fill").font(.system(size: 8)).frame(width: 14, height: 14).contentShape(Rectangle())
+                        }
                         .help("Interrupt (Ctrl-C)")
-                } else if !rt.agentConnected {
-                    Button { store.start(tab.id) } label: { Image(systemName: "play.fill") }
+                    } else if !rt.agentConnected {
+                        Button { store.start(tab.id) } label: {
+                            Image(systemName: "play.fill").font(.system(size: 8)).frame(width: 14, height: 14).contentShape(Rectangle())
+                        }
                         .help("Start or continue this session")
+                    }
+                } else if rt.needsAttention {
+                    Image(systemName: "bell.fill").font(.caption).foregroundStyle(.orange)
+                } else if rt.hasActivity {
+                    Circle().fill(.blue).frame(width: 6, height: 6)
                 }
-            } else if rt.needsAttention {
-                Image(systemName: "bell.fill").font(.caption).foregroundStyle(.orange)
-            } else if rt.hasActivity {
-                Circle().fill(.blue).frame(width: 6, height: 6)
             }
+            .frame(height: 18)
         }
         .buttonStyle(.plain)
         .opacity(rt.exited && !hovering ? 0.55 : 1)

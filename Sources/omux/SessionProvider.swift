@@ -40,7 +40,7 @@ enum SessionProvider: String, Codable, CaseIterable, Identifiable {
         return .custom
     }
 
-    static func claudeCommand(_ raw: String, sessionID: UUID, conversationExists: Bool) -> String {
+    static func claudeCommand(_ raw: String, sessionID: UUID, conversationExists: Bool, continueLatest: Bool = false) -> String {
         let parts = raw.split(separator: " ", maxSplits: 1).map(String.init)
         guard parts.first == "claude" else { return raw }
         let rest = parts.count > 1 ? parts[1] : ""
@@ -48,7 +48,7 @@ enum SessionProvider: String, Codable, CaseIterable, Identifiable {
         let flags: Set<String> = ["--resume", "-r", "--continue", "-c", "--session-id"]
         if words.contains(where: { flags.contains($0) || $0.hasPrefix("--resume=") || $0.hasPrefix("--session-id=") }) { return raw }
         let session = sessionID.uuidString.lowercased()
-        let flag = conversationExists ? "--resume \(session)" : "--session-id \(session)"
+        let flag = conversationExists ? "--resume \(session)" : (continueLatest ? "--continue" : "--session-id \(session)")
         return ["claude", flag, rest].filter { !$0.isEmpty }.joined(separator: " ")
     }
 }

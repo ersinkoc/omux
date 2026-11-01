@@ -2,6 +2,17 @@
 
 All notable changes to omux are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## [0.9.1] - 2026-11-01
+
+### Added
+
+- **What ▶ starts.** Settings › Sessions chooses the agent ▶ starts in a plain shell session (Claude Code or Codex); the shell becomes that agent's session. A second setting decides what an agent with no saved conversation does: start fresh, or continue the folder's latest conversation (`claude --continue`). A saved conversation is always resumed exactly.
+
+### Changed
+
+- ▶ brings the session forward and focuses its terminal instead of starting it in the background.
+- The ▶ and ■ buttons are smaller and centred on the session's name line.
+
 ## [0.9.0] - 2026-11-01
 
 ### Added

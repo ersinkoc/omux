@@ -82,4 +82,16 @@ final class SessionProviderTests: XCTestCase {
         XCTAssertTrue(SessionProvider.shell.startsAutomatically(in: "/Users/me", home: "/Users/me"))
         XCTAssertTrue(SessionProvider.custom.startsAutomatically(in: "/Users/me", home: "/Users/me"))
     }
+
+    /// With no saved conversation, ▶ can pick up the folder's latest one instead of starting fresh.
+    func testContinueLatestWhenNothingIsSaved() {
+        let id = UUID()
+        XCTAssertEqual(SessionProvider.claudeCommand("claude", sessionID: id, conversationExists: false, continueLatest: true), "claude --continue")
+        XCTAssertEqual(SessionProvider.claudeCommand("claude --model opus", sessionID: id, conversationExists: false, continueLatest: true), "claude --continue --model opus")
+        // A saved conversation is resumed exactly, whatever the setting says.
+        XCTAssertEqual(SessionProvider.claudeCommand("claude", sessionID: id, conversationExists: true, continueLatest: true),
+                       "claude --resume \(id.uuidString.lowercased())")
+        // Flags the user wrote win.
+        XCTAssertEqual(SessionProvider.claudeCommand("claude -c", sessionID: id, conversationExists: false, continueLatest: true), "claude -c")
+    }
 }

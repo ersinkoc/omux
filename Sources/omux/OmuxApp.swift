@@ -46,10 +46,14 @@ enum Prefs {
     static let welcomed = "welcomed"
     /// Sessions get the `omux` command line tool. On by default.
     static let cliEnabled = "cliEnabled"
+    /// Which agent ▶ starts in a plain shell session: "claude" or "codex".
+    static let playAgent = "playAgent"
+    /// What ▶ does for an agent with no saved conversation: "fresh" or "continue" (the folder's latest).
+    static let startWithoutHistory = "startWithoutHistory"
 
     static let all = [confirmQuit, showFolderPath, usageInterval, theme, autoResume, showFiles, filesByDate,
                       filesBrowserCollapsed, previewWrapLines, panelTab, fontFamily, fontSize,
-                      notifyNeedsYou, notifyDone, notifyPrograms, cliEnabled]
+                      notifyNeedsYou, notifyDone, notifyPrograms, cliEnabled, playAgent, startWithoutHistory]
 
     /// A beta build (./build.sh --beta) starts out with the release app's settings, such as
     /// the theme and font, instead of the defaults. Only on its first launch.
@@ -79,6 +83,8 @@ struct SettingsView: View {
     @AppStorage(Prefs.notifyDone) private var notifyDone = false
     @AppStorage(Prefs.notifyPrograms) private var notifyPrograms = true
     @AppStorage(Prefs.cliEnabled) private var cliEnabled = true
+    @AppStorage(Prefs.playAgent) private var playAgent = "claude"
+    @AppStorage(Prefs.startWithoutHistory) private var startWithoutHistory = "fresh"
 
     var body: some View {
         Form {
@@ -105,6 +111,17 @@ struct SettingsView: View {
                 Toggle("Wrap long lines in file preview", isOn: $wrapLines)
             }
             Section("Sessions") {
+                Picker("▶ in a shell session starts", selection: $playAgent) {
+                    Text("Claude Code").tag("claude")
+                    Text("Codex").tag("codex")
+                }
+                Picker("An agent with no saved conversation", selection: $startWithoutHistory) {
+                    Text("Starts fresh").tag("fresh")
+                    Text("Continues the folder's latest conversation").tag("continue")
+                }
+                Text("Continuing uses claude --continue; Codex always starts fresh.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Toggle("Auto-resume agent sessions at launch", isOn: $autoResume)
                 Text("Off: restored sessions stay stopped until you press ▶. Clicking one only opens its shell.")
                     .font(.caption)
@@ -348,11 +365,15 @@ struct SessionHeader: View {
                         .truncationMode(.head)
                 }
                 if rt.busy {
-                    Button { store.stop(tab.id) } label: { Image(systemName: "stop.fill") }
-                        .help("Interrupt (Ctrl-C)")
+                    Button { store.stop(tab.id) } label: {
+                        Image(systemName: "stop.fill").font(.system(size: 8)).frame(width: 14, height: 14).contentShape(Rectangle())
+                    }
+                    .help("Interrupt (Ctrl-C)")
                 } else if !rt.agentConnected {
-                    Button { store.start(tab.id) } label: { Image(systemName: "play.fill") }
-                        .help("Start or continue this session")
+                    Button { store.start(tab.id) } label: {
+                        Image(systemName: "play.fill").font(.system(size: 8)).frame(width: 14, height: 14).contentShape(Rectangle())
+                    }
+                    .help("Start or continue this session")
                 }
             } else {
                 Spacer()

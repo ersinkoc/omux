@@ -607,6 +607,15 @@ final class Store: ObservableObject {
     /// Starts the selected provider in an idle shell or resumes its exact saved chat.
     func start(_ id: UUID) {
         guard let loc = location(of: id), pendingCommands[id] == nil else { return }
+        // ▶ brings the session forward; what it starts should be what you're looking at.
+        selectedTabID = id
+        if let view = terminals[id] { view.window?.makeFirstResponder(view) }
+        // ▶ in a plain shell turns it into an agent session, the one chosen in Settings.
+        if groups[loc.group].tabs[loc.tab].resolvedProvider(in: groups[loc.group]) == .shell {
+            let agent: SessionProvider = UserDefaults.standard.string(forKey: Prefs.playAgent) == "codex" ? .codex : .claude
+            groups[loc.group].tabs[loc.tab].provider = agent
+            groups[loc.group].tabs[loc.tab].command = agent.command
+        }
         let tab = groups[loc.group].tabs[loc.tab]
         if let view = terminals[id], !(runtime[id]?.exited ?? true) {
             if runtime[id]?.provider == .codex, runtime[id]?.statusState == .error,
@@ -651,7 +660,10 @@ final class Store: ObservableObject {
         guard !raw.isEmpty else { return nil }
         guard tab.resolvedProvider(in: group) == .claude else { return raw }
         let session = tab.claudeSessionID.uuidString.lowercased()
-        return SessionProvider.claudeCommand(raw, sessionID: tab.claudeSessionID, conversationExists: Self.claudeSessionExists(session))
+        let exists = Self.claudeSessionExists(session)
+        // No saved conversation: start fresh, or pick up the folder's latest if Settings say so.
+        let continueLatest = !exists && UserDefaults.standard.string(forKey: Prefs.startWithoutHistory) == "continue"
+        return SessionProvider.claudeCommand(raw, sessionID: tab.claudeSessionID, conversationExists: exists, continueLatest: continueLatest)
     }
 
     /// Claude Code writes each conversation to ~/.claude/projects/<project>/<session>.jsonl.
