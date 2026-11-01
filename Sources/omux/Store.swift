@@ -958,6 +958,8 @@ final class Store: ObservableObject {
 
     func moveTab(_ id: UUID, toGroup groupID: UUID) {
         guard let loc = location(of: id), let gi = groups.firstIndex(where: { $0.id == groupID }), groups[loc.group].id != groupID else { return }
+        // Panes hold one project.
+        removeFromSplit(id)
         let tab = groups[loc.group].tabs.remove(at: loc.tab)
         groups[gi].tabs.append(tab)
         groups[gi].isCollapsed = false
@@ -1046,6 +1048,7 @@ final class Store: ObservableObject {
                 groups[gi].tabs.remove(at: loc.tab)
                 groups[gi].tabs.insert(tab, at: min(position, groups[gi].tabs.count))
             } else {
+                removeFromSplit(tab.id)
                 groups[loc.group].tabs.remove(at: loc.tab)
                 groups[gi].tabs.insert(tab, at: min(position, groups[gi].tabs.count))
                 groups[gi].isCollapsed = false
