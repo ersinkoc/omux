@@ -29,4 +29,19 @@ final class FilePreviewTests: XCTestCase {
         XCTAssertFalse(shows("big-marker", for: big))
         XCTAssertFalse(shows("big-marker", for: bigLink))
     }
+
+    /// Markdown had no limit: a 2 MB changelog froze the window for 45 s.
+    @MainActor
+    func testMarkdownHasTheTextLimit() throws {
+        let fm = FileManager.default
+        let dir = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: dir) }
+        let small = dir.appendingPathComponent("README.md"), big = dir.appendingPathComponent("CHANGELOG.md")
+        try "# small-marker\n".write(to: small, atomically: true, encoding: .utf8)
+        try ("# big-marker\n" + String(repeating: "- item\n", count: 160_000)).write(to: big, atomically: true, encoding: .utf8)
+
+        XCTAssertTrue(shows("small-marker", for: small))
+        XCTAssertFalse(shows("big-marker", for: big))
+    }
 }
